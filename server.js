@@ -14,8 +14,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Set proper MIME types for Vite build assets
+app.use((req, res, next) => {
+  if (req.url.endsWith('.js')) {
+    res.type('application/javascript');
+  } else if (req.url.endsWith('.css')) {
+    res.type('text/css');
+  }
+  next();
+});
+
 // Serve the frontend build (Vite) if present
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'dist'), { 
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
 
 
 // Prefer a single DATABASE_URL env var (common in Render/Heroku/Neon).
