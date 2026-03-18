@@ -22,7 +22,8 @@ export const SimpleAuth: React.FC<SimpleAuthProps> = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/login', {
+      const apiUrl = window.location.origin + '/api/auth/login';
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

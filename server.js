@@ -283,6 +283,28 @@ app.get('/api/recipes/:userId', async (req, res) => {
   }
 });
 
+app.post('/api/recipes', async (req, res) => {
+  try {
+    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items, userId } = req.body;
+    const result = await client.query(
+      'INSERT INTO recipes (name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, userId]
+    );
+    const recipe = result.rows[0];
+    for (const item of items) {
+      await client.query(
+        'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
+        [recipe.id, item.materialId, item.qty, item.unit]
+      );
+    }
+    res.json(recipe);
+  } catch (error) {
+    console.error('Error creating recipe:', error);
+    res.status(500).json({ error: 'Erro ao criar receita' });
+  }
+});
+
+
 app.put('/api/recipes/:id', async (req, res) => {
   try {
     const { id } = req.params;
