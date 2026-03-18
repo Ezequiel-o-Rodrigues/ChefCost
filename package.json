@@ -10,7 +10,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "server": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "create-user": "node create-user.js"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
