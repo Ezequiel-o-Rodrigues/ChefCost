@@ -221,25 +221,30 @@ app.post('/api/auth/register', async (req, res) => {
 app.get('/api/materials/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
+    // Security: verify user is only accessing their own data
+    if (userId !== req.userId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
     const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [userId]);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching materials:', error);
-    res.status(500).json({ error: 'Erro ao buscar insumos' });
+    console.error('Error fetching materials:', error.message, error);
+    res.status(500).json({ error: 'Erro ao buscar insumos', details: error.message });
   }
 });
 
 app.post('/api/materials', authenticateToken, async (req, res) => {
   try {
-    const { name, unit, packageQty, pricePaid, pricePerMinUnit, userId } = req.body;
+    const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
+    const userId = req.userId; // Use userId from authenticated token
     const result = await client.query(
       'INSERT INTO materials (name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [name, unit, packageQty, pricePaid, pricePerMinUnit, userId]
     );
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error inserting material:', error);
-    res.status(500).json({ error: 'Erro ao adicionar insumo' });
+    console.error('Error inserting material:', error.message, error);
+    res.status(500).json({ error: 'Erro ao adicionar insumo', details: error.message });
   }
 });
 
@@ -271,16 +276,20 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
 
 // Similar for recipes, conversions, settings
 // For recipes, need to handle items
-
-app.get('/api/recipes/:userId', authenticateToken, async (req, res) => {
-  try {
-    const { userId } = req.params;
+// Security: verify user is only accessing their own data
+    if (userId !== req.userId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
     const result = await client.query('SELECT * FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
     const recipes = [];
     for (const row of result.rows) {
       const itemsResult = await client.query('SELECT * FROM recipe_items WHERE recipe_id = $1', [row.id]);
       recipes.push({ ...row, items: itemsResult.rows });
     }
+    res.json(recipes);
+  } catch (error) {
+    console.error('Error fetching recipes:', error.message, error);
+    res.status(500).json({ error: 'Erro ao buscar receitas', details: error.message
     res.json(recipes);
   } catch (error) {
     console.error('Error fetching recipes:', error);
@@ -290,7 +299,8 @@ app.get('/api/recipes/:userId', authenticateToken, async (req, res) => {
 
 app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
-    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items, userId } = req.body;
+    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
+    const userId = req.userId; // Use userId from authenticated token
     const result = await client.query(
       'INSERT INTO recipes (name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
       [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, userId]
@@ -304,8 +314,8 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
     }
     res.json(recipe);
   } catch (error) {
-    console.error('Error creating recipe:', error);
-    res.status(500).json({ error: 'Erro ao criar receita' });
+    console.error('Error creating recipe:', error.message, error);
+    res.status(500).json({ error: 'Erro ao criar receita', details: error.message });
   }
 });
 
@@ -359,15 +369,16 @@ app.get('/api/conversions/:userId', authenticateToken, async (req, res) => {
 
 app.post('/api/conversions', authenticateToken, async (req, res) => {
   try {
-    const { name, grams, userId } = req.body;
+    const { name, grams } = req.body;
+    const userId = req.userId; // Use userId from authenticated token
     const result = await client.query(
       'INSERT INTO conversions (name, grams, user_id) VALUES ($1, $2, $3) RETURNING *',
       [name, grams, userId]
     );
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error inserting conversion:', error);
-    res.status(500).json({ error: 'Erro ao adicionar conversão' });
+    console.error('Error inserting conversion:', error.message, error);
+    res.status(500).json({ error: 'Erro ao adicionar conversão', details: error.message });
   }
 });
 
@@ -400,7 +411,8 @@ app.get('/api/settings/:userId', authenticateToken, async (req, res) => {
 
 app.post('/api/settings', authenticateToken, async (req, res) => {
   try {
-    const { userId, hourlyRate, energyRate } = req.body;
+    const { hourlyRate, energyRate } = req.body;
+    const userId = req.userId; // Use userId from authenticated token
     await client.query(
       'INSERT INTO settings (user_id, hourly_rate, energy_rate) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET hourly_rate = $2, energy_rate = $3',
       [userId, hourlyRate, energyRate]

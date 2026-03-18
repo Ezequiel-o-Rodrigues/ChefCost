@@ -79,7 +79,7 @@ export const useAPI = () => {
     await fetch(`${API_BASE}/materials`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ ...material, pricePerMinUnit, userId: userEmail })
+      body: JSON.stringify({ ...material, pricePerMinUnit })
     });
     fetchData();
   };
@@ -107,7 +107,7 @@ export const useAPI = () => {
     await fetch(`${API_BASE}/recipes`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ ...recipe, userId: userEmail })
+      body: JSON.stringify(recipe)
     });
     fetchData();
   };
@@ -143,7 +143,7 @@ export const useAPI = () => {
     await fetch(`${API_BASE}/conversions`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ ...conversion, userId: userEmail })
+      body: JSON.stringify(conversion)
     });
     fetchData();
   };
