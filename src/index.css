@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", serif;
+  
+  --color-creme: #FCF9F1;
+  --color-pastel-pink: #F4C2C2;
+  --color-burgundy: #800020;
+  --color-burgundy-light: #A02040;
+}
+
+body {
+  @apply bg-creme text-gray-800 font-sans;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  @apply bg-burgundy text-white px-6 py-3 rounded-xl font-medium shadow-md active:scale-95 transition-transform;
+}
+
+.btn-secondary {
+  @apply bg-pastel-pink text-burgundy px-6 py-3 rounded-xl font-medium active:scale-95 transition-transform;
+}
+
+.card {
+  @apply rounded-2xl p-4 shadow-sm border border-black/5;
+}
+
+.bottom-nav-item {
+  @apply flex flex-col items-center justify-center flex-1 py-2 text-gray-400 transition-colors;
+}
+
+.bottom-nav-item.active {
+  @apply text-burgundy;
+}

@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Material": {
+      "title": "Material",
+      "description": "Insumo bruto utilizado nas receitas.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome do insumo" },
+        "unit": { "type": "string", "enum": ["kg", "g", "L", "ml", "un"], "description": "Unidade de medida" },
+        "packageQty": { "type": "number", "description": "Quantidade na embalagem" },
+        "pricePaid": { "type": "number", "description": "Preço pago pela embalagem" },
+        "pricePerMinUnit": { "type": "number", "description": "Preço por grama/ml/unidade" },
+        "userId": { "type": "string", "description": "ID do usuário dono" }
+      },
+      "required": ["name", "unit", "packageQty", "pricePaid", "userId"]
+    },
+    "Recipe": {
+      "title": "Recipe",
+      "description": "Ficha técnica de uma receita.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome da receita" },
+        "yield": { "type": "number", "description": "Rendimento total em unidades" },
+        "profitMargin": { "type": "number", "description": "Margem de lucro desejada em %" },
+        "packagingCost": { "type": "number", "description": "Custo fixo de embalagem" },
+        "laborCost": { "type": "number", "description": "Valor da hora de trabalho" },
+        "energyCost": { "type": "number", "description": "Custo de energia/gás por hora" },
+        "wasteFactor": { "type": "number", "description": "Fator de desperdício (ex: 0.1 para 10%)" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "materialId": { "type": "string" },
+              "qty": { "type": "number" },
+              "unit": { "type": "string" }
+            }
+          }
+        },
+        "userId": { "type": "string", "description": "ID do usuário dono" },
+        "createdAt": { "type": "number", "description": "Timestamp de criação" }
+      },
+      "required": ["name", "yield", "profitMargin", "userId", "items"]
+    },
+    "Conversion": {
+      "title": "Conversion",
+      "description": "Conversão personalizada de medida caseira para gramas.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome da medida (ex: Xícara)" },
+        "grams": { "type": "number", "description": "Equivalente em gramas" },
+        "userId": { "type": "string", "description": "ID do usuário dono" }
+      },
+      "required": ["name", "grams", "userId"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Configurações globais do usuário.",
+      "type": "object",
+      "properties": {
+        "hourlyRate": { "type": "number" },
+        "energyRate": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/materials/{materialId}": { "schema": "Material", "description": "Coleção de insumos" },
+    "/recipes/{recipeId}": { "schema": "Recipe", "description": "Coleção de receitas" },
+    "/conversions/{conversionId}": { "schema": "Conversion", "description": "Coleção de conversões" },
+    "/settings/{userId}": { "schema": "Settings", "description": "Configurações do usuário" }
+  }
+}

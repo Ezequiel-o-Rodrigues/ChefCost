@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: materials
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - unit: string (required, enum: kg, g, L, ml, un)
+    //   - packageQty: number (required, positive)
+    //   - pricePaid: number (required, positive)
+    //   - pricePerMinUnit: number (required, positive)
+    //   - userId: string (required, matches auth.uid)
+    //
+    // Collection: recipes
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - yield: number (required, positive)
+    //   - profitMargin: number (required, positive)
+    //   - packagingCost: number (required, non-negative)
+    //   - laborCost: number (required, non-negative)
+    //   - energyCost: number (required, non-negative)
+    //   - wasteFactor: number (required, 0-1)
+    //   - items: list (required, items: { materialId, qty, unit })
+    //   - userId: string (required, matches auth.uid)
+    //   - createdAt: number (required)
+    //
+    // Collection: conversions
+    // Fields:
+    //   - name: string (required, 1-50 chars)
+    //   - grams: number (required, positive)
+    //   - userId: string (required, matches auth.uid)
+    //
+    // Collection: settings
+    // Fields:
+    //   - hourlyRate: number (required, non-negative)
+    //   - energyRate: number (required, non-negative)
+    //   - userId: string (required, matches auth.uid)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidMaterial(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.unit in ['kg', 'g', 'L', 'ml', 'un'] &&
+             data.packageQty is number && data.packageQty > 0 &&
+             data.pricePaid is number && data.pricePaid >= 0 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidRecipe(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.yield is number && data.yield > 0 &&
+             data.profitMargin is number && data.profitMargin >= 0 &&
+             data.items is list && data.items.size() <= 50 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidConversion(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
+             data.grams is number && data.grams > 0 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidSettings(data) {
+      return data.hourlyRate is number && data.hourlyRate >= 0 &&
+             data.energyRate is number && data.energyRate >= 0 &&
+             data.userId == request.auth.uid;
+    }
+
+    // Rules
+    match /materials/{materialId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidMaterial(request.resource.data);
+      allow update: if isDocOwner() && isValidMaterial(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /recipes/{recipeId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidRecipe(request.resource.data);
+      allow update: if isDocOwner() && isValidRecipe(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /conversions/{conversionId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidConversion(request.resource.data);
+      allow update: if isDocOwner() && isValidConversion(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /settings/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidSettings(request.resource.data);
+    }
+  }
+}
