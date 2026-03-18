@@ -218,13 +218,18 @@ app.post('/api/auth/register', async (req, res) => {
 
 // === DATA ENDPOINTS (com autenticação) ===
 
-app.get('/api/materials/:userId', async (req, res) => {
-  const { userId } = req.params;
-  const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [userId]);
-  res.json(result.rows);
+app.get('/api/materials/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [userId]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching materials:', error);
+    res.status(500).json({ error: 'Erro ao buscar insumos' });
+  }
 });
 
-app.post('/api/materials', async (req, res) => {
+app.post('/api/materials', authenticateToken, async (req, res) => {
   try {
     const { name, unit, packageQty, pricePaid, pricePerMinUnit, userId } = req.body;
     const result = await client.query(
@@ -238,7 +243,7 @@ app.post('/api/materials', async (req, res) => {
   }
 });
 
-app.put('/api/materials/:id', async (req, res) => {
+app.put('/api/materials/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
@@ -253,7 +258,7 @@ app.put('/api/materials/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/materials/:id', async (req, res) => {
+app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     await client.query('DELETE FROM materials WHERE id = $1', [id]);
@@ -267,7 +272,7 @@ app.delete('/api/materials/:id', async (req, res) => {
 // Similar for recipes, conversions, settings
 // For recipes, need to handle items
 
-app.get('/api/recipes/:userId', async (req, res) => {
+app.get('/api/recipes/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await client.query('SELECT * FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
@@ -283,7 +288,7 @@ app.get('/api/recipes/:userId', async (req, res) => {
   }
 });
 
-app.post('/api/recipes', async (req, res) => {
+app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items, userId } = req.body;
     const result = await client.query(
@@ -305,7 +310,7 @@ app.post('/api/recipes', async (req, res) => {
 });
 
 
-app.put('/api/recipes/:id', async (req, res) => {
+app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
@@ -328,7 +333,7 @@ app.put('/api/recipes/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/recipes/:id', async (req, res) => {
+app.delete('/api/recipes/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     await client.query('DELETE FROM recipes WHERE id = $1', [id]);
@@ -341,7 +346,7 @@ app.delete('/api/recipes/:id', async (req, res) => {
 
 // Add update and delete for recipes similarly
 
-app.get('/api/conversions/:userId', async (req, res) => {
+app.get('/api/conversions/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await client.query('SELECT * FROM conversions WHERE user_id = $1', [userId]);
@@ -352,7 +357,7 @@ app.get('/api/conversions/:userId', async (req, res) => {
   }
 });
 
-app.post('/api/conversions', async (req, res) => {
+app.post('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const { name, grams, userId } = req.body;
     const result = await client.query(
@@ -366,7 +371,7 @@ app.post('/api/conversions', async (req, res) => {
   }
 });
 
-app.delete('/api/conversions/:id', async (req, res) => {
+app.delete('/api/conversions/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     await client.query('DELETE FROM conversions WHERE id = $1', [id]);
@@ -378,7 +383,7 @@ app.delete('/api/conversions/:id', async (req, res) => {
 });
 
 // Settings
-app.get('/api/settings/:userId', async (req, res) => {
+app.get('/api/settings/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await client.query('SELECT * FROM settings WHERE user_id = $1', [userId]);
@@ -393,7 +398,7 @@ app.get('/api/settings/:userId', async (req, res) => {
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', authenticateToken, async (req, res) => {
   try {
     const { userId, hourlyRate, energyRate } = req.body;
     await client.query(
