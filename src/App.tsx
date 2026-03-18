@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, ShoppingBasket, BookOpen, Settings as SettingsIcon, Menu, ChefHat } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -17,7 +17,7 @@ import { SettingsForm } from './components/SettingsForm';
 import { ConversionForm } from './components/ConversionForm';
 import { IngredientForm } from './components/IngredientForm';
 import { RecipeForm } from './components/RecipeForm';
-import { Auth } from './components/Auth';
+import { SimpleAuth } from './components/SimpleAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/Sidebar';
 import { Documentation } from './components/Documentation';
@@ -30,8 +30,20 @@ function cn(...inputs: ClassValue[]) {
 }
 
 function AppContent() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Verificar se há token salvo no localStorage
+    const token = localStorage.getItem('authToken');
+    const email = localStorage.getItem('userEmail');
+    if (token && email) {
+      setIsAuthenticated(true);
+      setUserEmail(email);
+    }
+  }, []);
+
   const { 
-    user, 
     materials, 
     recipes, 
     conversions, 
@@ -52,8 +64,11 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
 
-  if (!user) {
-    return <Auth />;
+  if (!isAuthenticated) {
+    return <SimpleAuth onLogin={(email) => {
+      setIsAuthenticated(true);
+      setUserEmail(email);
+    }} />;
   }
 
   if (loading) {
@@ -112,6 +127,10 @@ function AppContent() {
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         onOpenDocs={() => setShowDocs(true)}
+        onLogout={() => {
+          setIsAuthenticated(false);
+          setUserEmail(null);
+        }}
       />
 
       <AnimatePresence mode="wait">

@@ -4,11 +4,14 @@ import { Client } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const JWT_SECRET = process.env.JWT_SECRET || 'chefcost-secret-key-change-in-production';
 
 const app = express();
 app.use(cors());
@@ -62,6 +65,16 @@ client.connect()
 
 // Create tables if not exist
 const createTables = async () => {
+  // Users table
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   await client.query(`
     CREATE TABLE IF NOT EXISTS materials (
       id SERIAL PRIMARY KEY,
@@ -119,8 +132,91 @@ const createTables = async () => {
 
 createTables();
 
-// API routes
-app.get('/api/materials/:userId', async (req, res) => {
+// Middleware para verificar token JWT
+const authenticateToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.email; // Usar email como identificador
+    next();
+  } catch (err) {
+    res.status(403).json({ error: 'Token inválido' });
+  }
+};
+
+// === AUTH ENDPOINTS ===
+
+// Endpoint de Login
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+  }
+
+  try {
+    const result = await client.query('SELECT * FROM users WHERE email = $1', [email]);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Email ou senha incorretos' });
+    }
+
+    const user = result.rows[0];
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Email ou senha incorretos' });
+    }
+
+    const token = jwt.sign({ email, userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, email });
+  } catch (error) {
+    console.error('Error on login:', error);
+    res.status(500).json({ error: 'Erro ao fazer login' });
+  }
+});
+
+// Endpoint de Registro (usar apenas com cuidado - você controla quem pode se registrar)
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password } = req.body;
+
+  // SEGURANÇA: Em produção, isso deve ser protegido (ex: token de admin)
+  const adminSecret = process.env.ADMIN_SECRET || 'admin-secret';
+  const { adminToken } = req.body;
+
+  if (adminToken !== adminSecret) {
+    return res.status(403).json({ error: 'Não autorizado a criar usuários' });
+  }
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+  }
+
+  try {
+    const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const result = await client.query(
+      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email',
+      [email, passwordHash]
+    );
+
+    const token = jwt.sign({ email, userId: result.rows[0].id }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, email, message: 'Usuário criado com sucesso' });
+  } catch (error) {
+    console.error('Error on register:', error);
+    res.status(500).json({ error: 'Erro ao registrar usuário' });
+  }
+});
+
+// === DATA ENDPOINTS (com autenticação) ===
   const { userId } = req.params;
   const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [userId]);
   res.json(result.rows);

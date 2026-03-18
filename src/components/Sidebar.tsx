@@ -6,22 +6,20 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { X, LogOut, Book, Mail, Github, ExternalLink } from 'lucide-react';
-import { auth } from '../firebase';
-import { signOut } from 'firebase/auth';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenDocs: () => void;
+  onLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenDocs }) => {
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenDocs, onLogout }) => {
+  const handleLogout = () => {
+    // Remove token e email do localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userEmail');
+    onLogout();
   };
 
   return (

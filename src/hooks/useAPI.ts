@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { auth } from '../firebase';
 import { Material, Recipe, Conversion, AppSettings } from '../types';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = window.location.origin + '/api';
 
 export const useAPI = () => {
-  const [user, setUser] = useState(auth.currentUser);
+  const [user, setUser] = useState<string | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [conversions, setConversions] = useState<Conversion[]>([]);
@@ -13,29 +12,36 @@ export const useAPI = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      setUser(user);
-      if (!user) {
-        setMaterials([]);
-        setRecipes([]);
-        setConversions([]);
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribeAuth();
+    const email = localStorage.getItem('userEmail');
+    const token = localStorage.getItem('authToken');
+    
+    if (email && token) {
+      setUser(email);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('authToken');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+  };
+
   const fetchData = async () => {
-    if (!user) return;
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) return;
 
     setLoading(true);
     try {
+      const headers = getAuthHeaders();
       const [materialsRes, recipesRes, conversionsRes, settingsRes] = await Promise.all([
-        fetch(`${API_BASE}/materials/${user.uid}`),
-        fetch(`${API_BASE}/recipes/${user.uid}`),
-        fetch(`${API_BASE}/conversions/${user.uid}`),
-        fetch(`${API_BASE}/settings/${user.uid}`)
+        fetch(`${API_BASE}/materials/${userEmail}`, { headers }),
+        fetch(`${API_BASE}/recipes/${userEmail}`, { headers }),
+        fetch(`${API_BASE}/conversions/${userEmail}`, { headers }),
+        fetch(`${API_BASE}/settings/${userEmail}`, { headers })
       ]);
 
       const materialsData = await materialsRes.json();
@@ -55,11 +61,14 @@ export const useAPI = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    if (user) {
+      fetchData();
+    }
   }, [user]);
 
   const addMaterial = async (material: Omit<Material, 'id' | 'userId' | 'pricePerMinUnit'>) => {
-    if (!user) return;
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) return;
     
     const totalMinUnits = material.unit === 'kg' || material.unit === 'L' 
       ? material.packageQty * 1000 
@@ -69,8 +78,8 @@ export const useAPI = () => {
 
     await fetch(`${API_BASE}/materials`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...material, pricePerMinUnit, userId: user.uid })
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...material, pricePerMinUnit, userId: userEmail })
     });
     fetchData();
   };
@@ -78,23 +87,27 @@ export const useAPI = () => {
   const updateMaterial = async (id: string, material: Partial<Material>) => {
     await fetch(`${API_BASE}/materials/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(material)
     });
     fetchData();
   };
 
   const deleteMaterial = async (id: string) => {
-    await fetch(`${API_BASE}/materials/${id}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/materials/${id}`, { 
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
     fetchData();
   };
 
   const addRecipe = async (recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) => {
-    if (!user) return;
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) return;
     await fetch(`${API_BASE}/recipes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...recipe, userId: user.uid })
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...recipe, userId: userEmail })
     });
     fetchData();
   };
@@ -102,38 +115,46 @@ export const useAPI = () => {
   const updateRecipe = async (id: string, recipe: Partial<Recipe>) => {
     await fetch(`${API_BASE}/recipes/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(recipe)
     });
     fetchData();
   };
 
   const deleteRecipe = async (id: string) => {
-    await fetch(`${API_BASE}/recipes/${id}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/recipes/${id}`, { 
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
     fetchData();
   };
 
   const deleteConversion = async (id: string) => {
-    await fetch(`${API_BASE}/conversions/${id}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/conversions/${id}`, { 
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
     fetchData();
   };
 
   const addConversion = async (conversion: Omit<Conversion, 'id' | 'userId'>) => {
-    if (!user) return;
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) return;
     await fetch(`${API_BASE}/conversions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...conversion, userId: user.uid })
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...conversion, userId: userEmail })
     });
     fetchData();
   };
 
   const updateSettings = async (settings: AppSettings) => {
-    if (!user) return;
+    const userEmail = localStorage.getItem('userEmail');
+    if (!userEmail) return;
     await fetch(`${API_BASE}/settings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...settings, userId: user.uid })
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...settings, userId: userEmail })
     });
     fetchData();
   };
