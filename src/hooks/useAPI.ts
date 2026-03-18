@@ -154,7 +154,7 @@ export const useAPI = () => {
     await fetch(`${API_BASE}/settings`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ ...settings, userId: userEmail })
+      body: JSON.stringify(settings)
     });
     fetchData();
   };

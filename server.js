@@ -38,9 +38,7 @@ app.use(express.static(path.join(__dirname, 'dist'), {
   }
 }));
 
-
-// Prefer a single DATABASE_URL env var (common in Render/Heroku/Neon).
-// Otherwise fall back to the legacy PGHOST/PGUSER/PGPASSWORD vars.
+// Database configuration
 const clientConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
@@ -65,7 +63,6 @@ client.connect()
 
 // Create tables if not exist
 const createTables = async () => {
-  // Users table
   await client.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -132,7 +129,7 @@ const createTables = async () => {
 
 createTables();
 
-// Middleware para verificar token JWT
+// Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
@@ -141,7 +138,7 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.email; // Usar email como identificador
+    req.userId = decoded.email;
     next();
   } catch (err) {
     res.status(403).json({ error: 'Token inválido' });
@@ -150,7 +147,6 @@ const authenticateToken = (req, res, next) => {
 
 // === AUTH ENDPOINTS ===
 
-// Endpoint de Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -180,13 +176,10 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Endpoint de Registro (usar apenas com cuidado - você controla quem pode se registrar)
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, adminToken } = req.body;
 
-  // SEGURANÇA: Em produção, isso deve ser protegido (ex: token de admin)
   const adminSecret = process.env.ADMIN_SECRET || 'admin-secret';
-  const { adminToken } = req.body;
 
   if (adminToken !== adminSecret) {
     return res.status(403).json({ error: 'Não autorizado a criar usuários' });
@@ -218,10 +211,10 @@ app.post('/api/auth/register', async (req, res) => {
 
 // === DATA ENDPOINTS (com autenticação) ===
 
+// MATERIALS
 app.get('/api/materials/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    // Security: verify user is only accessing their own data
     if (userId !== req.userId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -236,7 +229,7 @@ app.get('/api/materials/:userId', authenticateToken, async (req, res) => {
 app.post('/api/materials', authenticateToken, async (req, res) => {
   try {
     const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
-    const userId = req.userId; // Use userId from authenticated token
+    const userId = req.userId;
     const result = await client.query(
       'INSERT INTO materials (name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [name, unit, packageQty, pricePaid, pricePerMinUnit, userId]
@@ -258,8 +251,8 @@ app.put('/api/materials/:id', authenticateToken, async (req, res) => {
     );
     res.json({ success: true });
   } catch (error) {
-    console.error('Error updating material:', error);
-    res.status(500).json({ error: 'Erro ao atualizar insumo' });
+    console.error('Error updating material:', error.message, error);
+    res.status(500).json({ error: 'Erro ao atualizar insumo', details: error.message });
   }
 });
 
@@ -269,14 +262,15 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
     await client.query('DELETE FROM materials WHERE id = $1', [id]);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting material:', error);
-    res.status(500).json({ error: 'Erro ao deletar insumo' });
+    console.error('Error deleting material:', error.message, error);
+    res.status(500).json({ error: 'Erro ao deletar insumo', details: error.message });
   }
 });
 
-// Similar for recipes, conversions, settings
-// For recipes, need to handle items
-// Security: verify user is only accessing their own data
+// RECIPES
+app.get('/api/recipes/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
     if (userId !== req.userId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -289,28 +283,26 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
     res.json(recipes);
   } catch (error) {
     console.error('Error fetching recipes:', error.message, error);
-    res.status(500).json({ error: 'Erro ao buscar receitas', details: error.message
-    res.json(recipes);
-  } catch (error) {
-    console.error('Error fetching recipes:', error);
-    res.status(500).json({ error: 'Erro ao buscar receitas' });
+    res.status(500).json({ error: 'Erro ao buscar receitas', details: error.message });
   }
 });
 
 app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
-    const userId = req.userId; // Use userId from authenticated token
+    const userId = req.userId;
     const result = await client.query(
       'INSERT INTO recipes (name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
       [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, userId]
     );
     const recipe = result.rows[0];
-    for (const item of items) {
-      await client.query(
-        'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
-        [recipe.id, item.materialId, item.qty, item.unit]
-      );
+    if (items && items.length > 0) {
+      for (const item of items) {
+        await client.query(
+          'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
+          [recipe.id, item.materialId, item.qty, item.unit]
+        );
+      }
     }
     res.json(recipe);
   } catch (error) {
@@ -318,7 +310,6 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Erro ao criar receita', details: error.message });
   }
 });
-
 
 app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
   try {
@@ -328,18 +319,19 @@ app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
       'UPDATE recipes SET name = $1, yield = $2, profit_margin = $3, packaging_cost = $4, labor_cost = $5, energy_cost = $6, waste_factor = $7 WHERE id = $8',
       [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, id]
     );
-    // Update items: delete old and insert new
     await client.query('DELETE FROM recipe_items WHERE recipe_id = $1', [id]);
-    for (const item of items) {
-      await client.query(
-        'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
-        [id, item.materialId, item.qty, item.unit]
-      );
+    if (items && items.length > 0) {
+      for (const item of items) {
+        await client.query(
+          'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
+          [id, item.materialId, item.qty, item.unit]
+        );
+      }
     }
     res.json({ success: true });
   } catch (error) {
-    console.error('Error updating recipe:', error);
-    res.status(500).json({ error: 'Erro ao atualizar receita' });
+    console.error('Error updating recipe:', error.message, error);
+    res.status(500).json({ error: 'Erro ao atualizar receita', details: error.message });
   }
 });
 
@@ -349,28 +341,30 @@ app.delete('/api/recipes/:id', authenticateToken, async (req, res) => {
     await client.query('DELETE FROM recipes WHERE id = $1', [id]);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting recipe:', error);
-    res.status(500).json({ error: 'Erro ao deletar receita' });
+    console.error('Error deleting recipe:', error.message, error);
+    res.status(500).json({ error: 'Erro ao deletar receita', details: error.message });
   }
 });
 
-// Add update and delete for recipes similarly
-
+// CONVERSIONS
 app.get('/api/conversions/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
+    if (userId !== req.userId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
     const result = await client.query('SELECT * FROM conversions WHERE user_id = $1', [userId]);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching conversions:', error);
-    res.status(500).json({ error: 'Erro ao buscar conversões' });
+    console.error('Error fetching conversions:', error.message, error);
+    res.status(500).json({ error: 'Erro ao buscar conversões', details: error.message });
   }
 });
 
 app.post('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const { name, grams } = req.body;
-    const userId = req.userId; // Use userId from authenticated token
+    const userId = req.userId;
     const result = await client.query(
       'INSERT INTO conversions (name, grams, user_id) VALUES ($1, $2, $3) RETURNING *',
       [name, grams, userId]
@@ -388,15 +382,18 @@ app.delete('/api/conversions/:id', authenticateToken, async (req, res) => {
     await client.query('DELETE FROM conversions WHERE id = $1', [id]);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting conversion:', error);
-    res.status(500).json({ error: 'Erro ao deletar conversão' });
+    console.error('Error deleting conversion:', error.message, error);
+    res.status(500).json({ error: 'Erro ao deletar conversão', details: error.message });
   }
 });
 
-// Settings
+// SETTINGS
 app.get('/api/settings/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
+    if (userId !== req.userId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
     const result = await client.query('SELECT * FROM settings WHERE user_id = $1', [userId]);
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
@@ -404,32 +401,32 @@ app.get('/api/settings/:userId', authenticateToken, async (req, res) => {
       res.json({ hourlyRate: 25, energyRate: 5 });
     }
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    res.status(500).json({ error: 'Erro ao buscar configurações' });
+    console.error('Error fetching settings:', error.message, error);
+    res.status(500).json({ error: 'Erro ao buscar configurações', details: error.message });
   }
 });
 
 app.post('/api/settings', authenticateToken, async (req, res) => {
   try {
     const { hourlyRate, energyRate } = req.body;
-    const userId = req.userId; // Use userId from authenticated token
+    const userId = req.userId;
     await client.query(
       'INSERT INTO settings (user_id, hourly_rate, energy_rate) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET hourly_rate = $2, energy_rate = $3',
       [userId, hourlyRate, energyRate]
     );
     res.json({ success: true });
   } catch (error) {
-    console.error('Error updating settings:', error);
-    res.status(500).json({ error: 'Erro ao atualizar configurações' });
+    console.error('Error updating settings:', error.message, error);
+    res.status(500).json({ error: 'Erro ao atualizar configurações', details: error.message });
   }
 });
 
-const port = Number(process.env.PORT || 3001);
-// When no other routes match, serve the React app
+// Serve React app for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+const port = Number(process.env.PORT || 3001);
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
