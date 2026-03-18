@@ -173,6 +173,7 @@ export const useAPI = () => {
     updateRecipe,
     deleteRecipe,
     addConversion,
+    deleteConversion,
     updateSettings
   };
 };
