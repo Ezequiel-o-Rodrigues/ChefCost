@@ -133,14 +133,17 @@ createTables();
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
+    console.log('No token provided');
     return res.status(401).json({ error: 'Token não fornecido' });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.userId = decoded.email;
+    console.log('Token verified for user:', req.userId);
     next();
   } catch (err) {
+    console.error('Token verification failed:', err.message);
     res.status(403).json({ error: 'Token inválido' });
   }
 };
@@ -230,6 +233,8 @@ app.post('/api/materials', authenticateToken, async (req, res) => {
   try {
     const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
     const userId = req.userId;
+    console.log('POST /api/materials - userId:', userId, 'data:', { name, unit, packageQty, pricePaid, pricePerMinUnit });
+    
     const result = await client.query(
       'INSERT INTO materials (name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [name, unit, packageQty, pricePaid, pricePerMinUnit, userId]
@@ -291,6 +296,8 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
     const userId = req.userId;
+    console.log('POST /api/recipes - userId:', userId, 'recipe:', { name, yieldVal });
+    
     const result = await client.query(
       'INSERT INTO recipes (name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
       [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, userId]
@@ -365,6 +372,8 @@ app.post('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const { name, grams } = req.body;
     const userId = req.userId;
+    console.log('POST /api/conversions - userId:', userId, 'data:', { name, grams });
+    
     const result = await client.query(
       'INSERT INTO conversions (name, grams, user_id) VALUES ($1, $2, $3) RETURNING *',
       [name, grams, userId]
