@@ -2,25 +2,45 @@ import express from 'express';
 import cors from 'cors';
 import { Client } from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new Client({
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE,
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
-  ssl: { rejectUnauthorized: false },
-  port: 5432,
-});
+// Serve the frontend build (Vite) if present
+app.use(express.static(path.join(__dirname, 'dist')));
+
+
+// Prefer a single DATABASE_URL env var (common in Render/Heroku/Neon).
+// Otherwise fall back to the legacy PGHOST/PGUSER/PGPASSWORD vars.
+const clientConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    }
+  : {
+      host: process.env.PGHOST,
+      database: process.env.PGDATABASE,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      ssl: { rejectUnauthorized: false },
+    };
+
+const client = new Client(clientConfig);
 
 client.connect()
   .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => console.error('Connection error', err));
+  .catch(err => {
+    console.error('Connection error', err);
+    process.exit(1);
+  });
 
 // Create tables if not exist
 const createTables = async () => {
@@ -186,6 +206,12 @@ app.post('/api/settings', async (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(3001, () => {
-  console.log('Server running on port 3001');
+const port = Number(process.env.PORT || 3001);
+// When no other routes match, serve the React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
