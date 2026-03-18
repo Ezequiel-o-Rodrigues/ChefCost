@@ -217,6 +217,8 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // === DATA ENDPOINTS (com autenticação) ===
+
+app.get('/api/materials/:userId', async (req, res) => {
   const { userId } = req.params;
   const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [userId]);
   res.json(result.rows);
