@@ -20,6 +20,7 @@ import { SimpleAuth } from './components/SimpleAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/Sidebar';
 import { AdminDashboard } from './components/AdminDashboard';
+import { Documentation } from './components/Documentation';
 
 import { useAuth } from './hooks/useAuth';
 import { useAPI } from './hooks/useAPI';
