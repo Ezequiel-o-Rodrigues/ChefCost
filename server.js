@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -18,96 +19,61 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Set proper MIME types for Vite build assets
 app.use((req, res, next) => {
-  if (req.url.endsWith('.js')) {
-    res.type('application/javascript');
-  } else if (req.url.endsWith('.css')) {
-    res.type('text/css');
-  }
+  if (req.url.endsWith('.js')) res.type('application/javascript');
+  else if (req.url.endsWith('.css')) res.type('text/css');
   next();
 });
 
-// Serve the frontend build (Vite) if present
-app.use(express.static(path.join(__dirname, 'dist'), { 
-  setHeaders: (res, path) => {
-    if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    }
+app.use(express.static(path.join(__dirname, 'dist'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+    else if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
   }
 }));
 
-// Database configuration
 const clientConfig = process.env.DATABASE_URL
   ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
-  : {
-      host: process.env.PGHOST,
-      database: process.env.PGDATABASE,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-      ssl: { rejectUnauthorized: false },
-    };
+  : { host: process.env.PGHOST, database: process.env.PGDATABASE, user: process.env.PGUSER, password: process.env.PGPASSWORD, ssl: { rejectUnauthorized: false } };
 
 const client = new Pool(clientConfig);
 
-client.connect()
-  .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => console.error('Connection error', err));
-
-// Create tables if not exist
-const createTables = async () => {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
-      is_active BOOLEAN NOT NULL DEFAULT false,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  // Adiciona colunas se ja existir a tabela sem elas (migracao)
+// === INIT DB ===
+const initDB = async () => {
+  // Migracoes na tabela users existente (id ja e TEXT no Neon)
   await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'`);
   await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT false`);
   await client.query(`UPDATE users SET role = 'user' WHERE role IS NULL`);
   await client.query(`UPDATE users SET is_active = false WHERE is_active IS NULL`);
 
-  // Garante que o admin existe e esta ativo
+  // Garante admin
   const adminEmail = 'ezequielrod2020@gmail.com';
-  const adminHash = await bcrypt.hash('ezequiel2014', 10);
   const existing = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
   if (existing.rows.length === 0) {
-    const maxId = await client.query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM users');
-    const nextId = maxId.rows[0].next_id;
+    const hash = await bcrypt.hash('ezequiel2014', 10);
     await client.query(
       `INSERT INTO users (id, email, password_hash, role, is_active) VALUES ($1, $2, $3, 'admin', true)`,
-      [nextId, adminEmail, adminHash]
+      [randomUUID(), adminEmail, hash]
     );
   } else {
-    await client.query(
-      `UPDATE users SET role = 'admin', is_active = true WHERE email = $1`,
-      [adminEmail]
-    );
+    await client.query(`UPDATE users SET role = 'admin', is_active = true WHERE email = $1`, [adminEmail]);
   }
 
+  // Demais tabelas (ja existem, CREATE IF NOT EXISTS e seguro)
   await client.query(`
     CREATE TABLE IF NOT EXISTS materials (
-      id SERIAL PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       unit TEXT NOT NULL,
       package_qty REAL NOT NULL,
       price_paid REAL NOT NULL,
       price_per_min_unit REAL NOT NULL,
-      user_id INTEGER NOT NULL REFERENCES users(id)
+      user_id TEXT NOT NULL
     );
   `);
-
   await client.query(`
     CREATE TABLE IF NOT EXISTS recipes (
-      id SERIAL PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       yield REAL NOT NULL,
       profit_margin REAL NOT NULL,
@@ -115,61 +81,45 @@ const createTables = async () => {
       labor_cost REAL NOT NULL,
       energy_cost REAL NOT NULL,
       waste_factor REAL NOT NULL,
-      user_id INTEGER NOT NULL REFERENCES users(id),
+      user_id TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-
   await client.query(`
     CREATE TABLE IF NOT EXISTS recipe_items (
-      id SERIAL PRIMARY KEY,
-      recipe_id INTEGER REFERENCES recipes(id) ON DELETE CASCADE,
-      material_id INTEGER REFERENCES materials(id),
+      id TEXT PRIMARY KEY,
+      recipe_id TEXT REFERENCES recipes(id) ON DELETE CASCADE,
+      material_id TEXT,
       qty REAL NOT NULL,
       unit TEXT NOT NULL
     );
   `);
-
   await client.query(`
     CREATE TABLE IF NOT EXISTS conversions (
-      id SERIAL PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       grams REAL NOT NULL,
-      user_id INTEGER NOT NULL REFERENCES users(id)
+      user_id TEXT NOT NULL
     );
   `);
-
   await client.query(`
     CREATE TABLE IF NOT EXISTS settings (
-      user_id INTEGER PRIMARY KEY REFERENCES users(id),
+      user_id TEXT PRIMARY KEY,
       hourly_rate REAL NOT NULL,
       energy_rate REAL NOT NULL
     );
   `);
 };
 
-createTables()
-  .then(() => {
-    const port = Number(process.env.PORT || 3001);
-    app.listen(port, () => console.log(`Server running on port ${port}`));
-  })
-  .catch(err => {
-    console.error('Failed to initialize database:', err);
-    process.exit(1);
-  });
+// === MAPPERS ===
 const mapMaterial = (r) => ({
-  id: String(r.id),
-  name: r.name,
-  unit: r.unit,
-  packageQty: Number(r.package_qty),
-  pricePaid: Number(r.price_paid),
-  pricePerMinUnit: Number(r.price_per_min_unit),
-  userId: String(r.user_id),
+  id: String(r.id), name: r.name, unit: r.unit,
+  packageQty: Number(r.package_qty), pricePaid: Number(r.price_paid),
+  pricePerMinUnit: Number(r.price_per_min_unit), userId: String(r.user_id),
 });
 
 const mapRecipe = (r, items = []) => ({
-  id: String(r.id),
-  name: r.name,
+  id: String(r.id), name: r.name,
   yield: Number(r.recipe_yield ?? r.yield ?? 1),
   profitMargin: Number(r.profit_margin ?? 0),
   packagingCost: Number(r.packaging_cost ?? 0),
@@ -178,26 +128,13 @@ const mapRecipe = (r, items = []) => ({
   wasteFactor: Number(r.waste_factor ?? 0),
   userId: String(r.user_id),
   createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
-  items: items.map(i => ({
-    materialId: String(i.material_id),
-    qty: Number(i.qty),
-    unit: i.unit,
-  })),
+  items: items.map(i => ({ materialId: String(i.material_id), qty: Number(i.qty), unit: i.unit })),
 });
 
-const mapConversion = (r) => ({
-  id: String(r.id),
-  name: r.name,
-  grams: r.grams,
-  userId: String(r.user_id),
-});
+const mapConversion = (r) => ({ id: String(r.id), name: r.name, grams: r.grams, userId: String(r.user_id) });
+const mapSettings = (r) => ({ hourlyRate: r.hourly_rate, energyRate: r.energy_rate });
 
-const mapSettings = (r) => ({
-  hourlyRate: r.hourly_rate,
-  energyRate: r.energy_rate,
-});
-
-// Middleware to verify JWT token
+// === MIDDLEWARES ===
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token não fornecido' });
@@ -206,7 +143,7 @@ const authenticateToken = (req, res, next) => {
     req.userId = decoded.userId;
     req.userRole = decoded.role;
     next();
-  } catch (err) {
+  } catch {
     res.status(403).json({ error: 'Token inválido' });
   }
 };
@@ -216,48 +153,28 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// === AUTH ENDPOINTS ===
-
+// === AUTH ===
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email e senha são obrigatórios' });
-  }
-
+  if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
   try {
     const result = await client.query('SELECT * FROM users WHERE email = $1', [email]);
-    
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Email ou senha incorretos' });
-    }
-
+    if (result.rows.length === 0) return res.status(401).json({ error: 'Email ou senha incorretos' });
     const user = result.rows[0];
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
-    if (!passwordMatch) return res.status(401).json({ error: 'Email ou senha incorretos' });
-
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Email ou senha incorretos' });
     if (!user.is_active) return res.status(403).json({ error: 'Acesso bloqueado. Entre em contato com o administrador.' });
-
     const token = jwt.sign({ email, userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, email, userId: user.id, role: user.role });
   } catch (error) {
-    console.error('Error on login:', error);
     res.status(500).json({ error: 'Erro ao fazer login' });
   }
 });
 
-// TEMP: diagnóstico da estrutura da tabela users
-app.get('/api/admin/debug-schema', async (req, res) => {
-  const schema = await client.query(`SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position`);
-  const rows = await client.query('SELECT id, email, role, is_active FROM users');
-  res.json({ schema: schema.rows, rows: rows.rows });
-});
-
+// === ADMIN ===
 app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const result = await client.query(
-      `SELECT id, email, role, is_active, created_at FROM users ORDER BY created_at DESC`
-    );
+    const result = await client.query(`SELECT id, email, role, is_active, created_at FROM users ORDER BY created_at DESC`);
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -267,20 +184,17 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
 app.post('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigat\u00f3rios' });
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios' });
     const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) return res.status(400).json({ error: 'Email j\u00e1 cadastrado' });
+    if (existing.rows.length > 0) return res.status(400).json({ error: 'Email já cadastrado' });
     const hash = await bcrypt.hash(password, 10);
-    // Calcula proximo ID manualmente para compatibilidade com Neon
-    const maxId = await client.query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM users');
-    const nextId = maxId.rows[0].next_id;
+    const newId = randomUUID();
     const result = await client.query(
       `INSERT INTO users (id, email, password_hash, role, is_active) VALUES ($1, $2, $3, 'user', true) RETURNING id, email, role, is_active, created_at`,
-      [nextId, email, hash]
+      [newId, email, hash]
     );
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating user:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -309,16 +223,13 @@ app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, 
   }
 });
 
-// === DATA ENDPOINTS (com autenticação) ===
-
-// MATERIALS
+// === MATERIALS ===
 app.get('/api/materials', authenticateToken, async (req, res) => {
   try {
     const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [req.userId]);
     res.json(result.rows.map(mapMaterial));
   } catch (error) {
-    console.error('Error fetching materials:', error.message, error);
-    res.status(500).json({ error: 'Erro ao buscar insumos', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -326,13 +237,12 @@ app.post('/api/materials', authenticateToken, async (req, res) => {
   try {
     const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
     const result = await client.query(
-      'INSERT INTO materials (name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, unit, packageQty, pricePaid, pricePerMinUnit, req.userId]
+      'INSERT INTO materials (id, name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [randomUUID(), name, unit, packageQty, pricePaid, pricePerMinUnit, req.userId]
     );
     res.json(mapMaterial(result.rows[0]));
   } catch (error) {
-    console.error('Error inserting material:', error.message, error);
-    res.status(500).json({ error: 'Erro ao adicionar insumo', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -341,63 +251,61 @@ app.put('/api/materials/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
     await client.query(
-      'UPDATE materials SET name = $1, unit = $2, package_qty = $3, price_paid = $4, price_per_min_unit = $5 WHERE id = $6',
+      'UPDATE materials SET name=$1, unit=$2, package_qty=$3, price_paid=$4, price_per_min_unit=$5 WHERE id=$6',
       [name, unit, packageQty, pricePaid, pricePerMinUnit, id]
     );
     res.json({ success: true });
   } catch (error) {
-    console.error('Error updating material:', error.message, error);
-    res.status(500).json({ error: 'Erro ao atualizar insumo', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    await client.query('DELETE FROM materials WHERE id = $1', [id]);
+    await client.query('DELETE FROM materials WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting material:', error.message, error);
-    res.status(500).json({ error: 'Erro ao deletar insumo', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// RECIPES
+// === RECIPES ===
 app.get('/api/recipes', authenticateToken, async (req, res) => {
   try {
-    const result = await client.query('SELECT id, name, yield AS recipe_yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id, created_at FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [req.userId]);
+    const result = await client.query(
+      'SELECT id, name, yield AS recipe_yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id, created_at FROM recipes WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.userId]
+    );
     const recipes = [];
     for (const row of result.rows) {
-      const itemsResult = await client.query('SELECT * FROM recipe_items WHERE recipe_id = $1', [row.id]);
-      recipes.push(mapRecipe(row, itemsResult.rows));
+      const items = await client.query('SELECT * FROM recipe_items WHERE recipe_id = $1', [row.id]);
+      recipes.push(mapRecipe(row, items.rows));
     }
     res.json(recipes);
   } catch (error) {
-    console.error('Error fetching recipes:', error.message, error);
-    res.status(500).json({ error: 'Erro ao buscar receitas', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
+    const recipeId = randomUUID();
     const result = await client.query(
-      'INSERT INTO recipes (name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, req.userId]
+      'INSERT INTO recipes (id, name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+      [recipeId, name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, req.userId]
     );
-    const recipe = result.rows[0];
-    if (items && items.length > 0) {
+    if (items?.length > 0) {
       for (const item of items) {
         await client.query(
-          'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
-          [recipe.id, item.materialId, item.qty, item.unit]
+          'INSERT INTO recipe_items (id, recipe_id, material_id, qty, unit) VALUES ($1,$2,$3,$4,$5)',
+          [randomUUID(), recipeId, item.materialId, item.qty, item.unit]
         );
       }
     }
-    res.json(mapRecipe(recipe, items || []));
+    res.json(mapRecipe(result.rows[0], items || []));
   } catch (error) {
-    console.error('Error creating recipe:', error.message, error);
-    res.status(500).json({ error: 'Erro ao criar receita', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -406,44 +314,40 @@ app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
     await client.query(
-      'UPDATE recipes SET name = $1, yield = $2, profit_margin = $3, packaging_cost = $4, labor_cost = $5, energy_cost = $6, waste_factor = $7 WHERE id = $8',
+      'UPDATE recipes SET name=$1, yield=$2, profit_margin=$3, packaging_cost=$4, labor_cost=$5, energy_cost=$6, waste_factor=$7 WHERE id=$8',
       [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, id]
     );
     await client.query('DELETE FROM recipe_items WHERE recipe_id = $1', [id]);
-    if (items && items.length > 0) {
+    if (items?.length > 0) {
       for (const item of items) {
         await client.query(
-          'INSERT INTO recipe_items (recipe_id, material_id, qty, unit) VALUES ($1, $2, $3, $4)',
-          [id, item.materialId, item.qty, item.unit]
+          'INSERT INTO recipe_items (id, recipe_id, material_id, qty, unit) VALUES ($1,$2,$3,$4,$5)',
+          [randomUUID(), id, item.materialId, item.qty, item.unit]
         );
       }
     }
     res.json({ success: true });
   } catch (error) {
-    console.error('Error updating recipe:', error.message, error);
-    res.status(500).json({ error: 'Erro ao atualizar receita', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.delete('/api/recipes/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    await client.query('DELETE FROM recipes WHERE id = $1', [id]);
+    await client.query('DELETE FROM recipes WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting recipe:', error.message, error);
-    res.status(500).json({ error: 'Erro ao deletar receita', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// CONVERSIONS
+// === CONVERSIONS ===
 app.get('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const result = await client.query('SELECT * FROM conversions WHERE user_id = $1', [req.userId]);
     res.json(result.rows.map(mapConversion));
   } catch (error) {
-    console.error('Error fetching conversions:', error.message, error);
-    res.status(500).json({ error: 'Erro ao buscar conversões', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -451,61 +355,59 @@ app.post('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const { name, grams } = req.body;
     const result = await client.query(
-      'INSERT INTO conversions (name, grams, user_id) VALUES ($1, $2, $3) RETURNING *',
-      [name, grams, req.userId]
+      'INSERT INTO conversions (id, name, grams, user_id) VALUES ($1,$2,$3,$4) RETURNING *',
+      [randomUUID(), name, grams, req.userId]
     );
     res.json(mapConversion(result.rows[0]));
   } catch (error) {
-    console.error('Error inserting conversion:', error.message, error);
-    res.status(500).json({ error: 'Erro ao adicionar conversão', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.delete('/api/conversions/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    await client.query('DELETE FROM conversions WHERE id = $1', [id]);
+    await client.query('DELETE FROM conversions WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting conversion:', error.message, error);
-    res.status(500).json({ error: 'Erro ao deletar conversão', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// SETTINGS
+// === SETTINGS ===
 app.get('/api/settings', authenticateToken, async (req, res) => {
   try {
     const result = await client.query('SELECT * FROM settings WHERE user_id = $1', [req.userId]);
     res.json(result.rows.length > 0 ? mapSettings(result.rows[0]) : { hourlyRate: 25, energyRate: 5 });
   } catch (error) {
-    console.error('Error fetching settings:', error.message, error);
-    res.status(500).json({ error: 'Erro ao buscar configurações', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 app.post('/api/settings', authenticateToken, async (req, res) => {
   try {
     const { hourlyRate, energyRate } = req.body;
-    const userId = req.userId;
     await client.query(
-      'INSERT INTO settings (user_id, hourly_rate, energy_rate) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET hourly_rate = $2, energy_rate = $3',
-      [userId, hourlyRate, energyRate]
+      'INSERT INTO settings (user_id, hourly_rate, energy_rate) VALUES ($1,$2,$3) ON CONFLICT (user_id) DO UPDATE SET hourly_rate=$2, energy_rate=$3',
+      [req.userId, hourlyRate, energyRate]
     );
     res.json({ success: true });
   } catch (error) {
-    console.error('Error updating settings:', error.message, error);
-    res.status(500).json({ error: 'Erro ao atualizar configurações', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// DEBUG - remover após diagnóstico
-app.get('/api/debug', authenticateToken, async (req, res) => {
-  const recipes = await client.query('SELECT * FROM recipes WHERE user_id = $1', [req.userId]);
-  const items = await client.query('SELECT * FROM recipe_items WHERE recipe_id = ANY($1)', [recipes.rows.map(r => r.id)]);
-  res.json({ recipes: recipes.rows, items: items.rows });
-});
-
-// Serve React app for all other routes
+// === FRONTEND ===
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
+
+// === START ===
+initDB()
+  .then(() => {
+    const port = Number(process.env.PORT || 3001);
+    app.listen(port, () => console.log(`Server running on port ${port}`));
+  })
+  .catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });
