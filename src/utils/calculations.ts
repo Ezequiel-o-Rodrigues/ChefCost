@@ -52,18 +52,22 @@ export const calculateRecipeTotalCost = (
   });
 
   // Apply waste factor
-  const costWithWaste = ingredientsCost * (1 + recipe.wasteFactor);
+  const wasteFactor = recipe.wasteFactor ?? 0;
+  const packagingCost = recipe.packagingCost ?? 0;
+  const laborCost = recipe.laborCost ?? 0;
+  const energyCost = recipe.energyCost ?? 0;
+  const yieldQty = recipe.yield || 1;
+
+  const costWithWaste = ingredientsCost * (1 + wasteFactor);
+  const laborTotal = prepTimeHours * laborCost;
+  const energyTotal = prepTimeHours * energyCost;
   
-  // Add labor and energy
-  const laborTotal = prepTimeHours * recipe.laborCost;
-  const energyTotal = prepTimeHours * recipe.energyCost;
-  
-  const totalCost = costWithWaste + laborTotal + energyTotal + recipe.packagingCost;
-  const costPerUnit = totalCost / recipe.yield;
+  const totalCost = costWithWaste + laborTotal + energyTotal + packagingCost;
+  const costPerUnit = totalCost / yieldQty;
   
   // Markup calculation: TotalCost * (1 + ProfitMargin)
   // Note: Markup can be complex, but here we use a simple Profit Margin multiplier
-  const suggestedPrice = costPerUnit * (1 + recipe.profitMargin / 100);
+  const suggestedPrice = costPerUnit * (1 + (recipe.profitMargin ?? 0) / 100);
 
   return {
     ingredientsCost,

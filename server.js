@@ -138,7 +138,7 @@ const mapMaterial = (r) => ({
 const mapRecipe = (r, items = []) => ({
   id: String(r.id),
   name: r.name,
-  yield: r.yield,
+  yield: r.recipe_yield ?? r.yield,
   profitMargin: r.profit_margin,
   packagingCost: r.packaging_cost,
   laborCost: r.labor_cost,
@@ -304,7 +304,7 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
 // RECIPES
 app.get('/api/recipes', authenticateToken, async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [req.userId]);
+    const result = await client.query('SELECT id, name, yield AS recipe_yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id, created_at FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [req.userId]);
     const recipes = [];
     for (const row of result.rows) {
       const itemsResult = await client.query('SELECT * FROM recipe_items WHERE recipe_id = $1', [row.id]);
