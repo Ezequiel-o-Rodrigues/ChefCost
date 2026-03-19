@@ -19,7 +19,7 @@ import { RecipeForm } from './components/RecipeForm';
 import { SimpleAuth } from './components/SimpleAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/Sidebar';
-import { Documentation } from './components/Documentation';
+import { AdminDashboard } from './components/AdminDashboard';
 
 import { useAuth } from './hooks/useAuth';
 import { useAPI } from './hooks/useAPI';
@@ -29,7 +29,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 function AppContent() {
-  const { userEmail, isAuthenticated, login, logout } = useAuth();
+  const { userEmail, isAuthenticated, isAdmin, login, logout } = useAuth();
   const {
     materials, recipes, conversions, settings, loading,
     addMaterial, updateMaterial, deleteMaterial,
@@ -46,6 +46,10 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return <SimpleAuth onLogin={login} />;
+  }
+
+  if (isAdmin) {
+    return <AdminDashboard onLogout={logout} />;
   }
 
   if (loading) {

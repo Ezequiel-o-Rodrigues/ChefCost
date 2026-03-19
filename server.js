@@ -63,9 +63,24 @@ const createTables = async () => {
       id SERIAL PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      is_active BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Adiciona colunas se ja existir a tabela sem elas (migracao)
+  await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
+  await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT false`);
+
+  // Garante que o admin existe e esta ativo
+  const adminEmail = 'ezequielrod2020@gmail.com';
+  const adminHash = await bcrypt.hash('ezequiel2014', 10);
+  await client.query(`
+    INSERT INTO users (email, password_hash, role, is_active)
+    VALUES ($1, $2, 'admin', true)
+    ON CONFLICT (email) DO UPDATE SET role = 'admin', is_active = true
+  `, [adminEmail, adminHash]);
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS materials (
@@ -168,20 +183,20 @@ const mapSettings = (r) => ({
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    console.log('No token provided');
-    return res.status(401).json({ error: 'Token não fornecido' });
-  }
-
+  if (!token) return res.status(401).json({ error: 'Token não fornecido' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.userId; // Use numeric user ID from JWT
-    console.log('Token verified for user ID:', req.userId);
+    req.userId = decoded.userId;
+    req.userRole = decoded.role;
     next();
   } catch (err) {
-    console.error('Token verification failed:', err.message);
     res.status(403).json({ error: 'Token inválido' });
   }
+};
+
+const requireAdmin = (req, res, next) => {
+  if (req.userRole !== 'admin') return res.status(403).json({ error: 'Acesso restrito' });
+  next();
 };
 
 // === AUTH ENDPOINTS ===
@@ -202,49 +217,67 @@ app.post('/api/auth/login', async (req, res) => {
 
     const user = result.rows[0];
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) return res.status(401).json({ error: 'Email ou senha incorretos' });
 
-    if (!passwordMatch) {
-      return res.status(401).json({ error: 'Email ou senha incorretos' });
-    }
+    if (!user.is_active) return res.status(403).json({ error: 'Acesso bloqueado. Entre em contato com o administrador.' });
 
-    const token = jwt.sign({ email, userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, email, userId: user.id });
+    const token = jwt.sign({ email, userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, email, userId: user.id, role: user.role });
   } catch (error) {
     console.error('Error on login:', error);
     res.status(500).json({ error: 'Erro ao fazer login' });
   }
 });
 
-app.post('/api/auth/register', async (req, res) => {
-  const { email, password, adminToken } = req.body;
-
-  const adminSecret = process.env.ADMIN_SECRET || 'admin-secret';
-
-  if (adminToken !== adminSecret) {
-    return res.status(403).json({ error: 'Não autorizado a criar usuários' });
-  }
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email e senha são obrigatórios' });
-  }
-
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'Email já cadastrado' });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
     const result = await client.query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email',
-      [email, passwordHash]
+      `SELECT id, email, role, is_active, created_at FROM users ORDER BY created_at DESC`
     );
-
-    const token = jwt.sign({ email, userId: result.rows[0].id }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, email, userId: result.rows[0].id, message: 'Usuário criado com sucesso' });
+    res.json(result.rows);
   } catch (error) {
-    console.error('Error on register:', error);
-    res.status(500).json({ error: 'Erro ao registrar usuário' });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios' });
+    const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) return res.status(400).json({ error: 'Email já cadastrado' });
+    const hash = await bcrypt.hash(password, 10);
+    const result = await client.query(
+      `INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'user', true) RETURNING id, email, role, is_active, created_at`,
+      [email, hash]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch('/api/admin/users/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await client.query(
+      `UPDATE users SET is_active = NOT is_active WHERE id = $1 AND role != 'admin' RETURNING id, email, role, is_active`,
+      [id]
+    );
+    if (result.rows.length === 0) return res.status(400).json({ error: 'Não é possível alterar o admin' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await client.query(`DELETE FROM users WHERE id = $1 AND role != 'admin'`, [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
