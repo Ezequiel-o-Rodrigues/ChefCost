@@ -70,14 +70,17 @@ const createTables = async () => {
   `);
 
   // Adiciona colunas se ja existir a tabela sem elas (migracao)
-  await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
-  await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT false`);
+  await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'`);
+  await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT false`);
+  await client.query(`UPDATE users SET role = 'user' WHERE role IS NULL`);
+  await client.query(`UPDATE users SET is_active = false WHERE is_active IS NULL`);
 
   // Garante que o admin existe e esta ativo
   const adminEmail = 'ezequielrod2020@gmail.com';
   const adminHash = await bcrypt.hash('ezequiel2014', 10);
   const existing = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
   if (existing.rows.length === 0) {
+    await client.query(`SELECT setval(pg_get_serial_sequence('users','id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false)`);
     await client.query(
       `INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'admin', true)`,
       [adminEmail, adminHash]
@@ -256,16 +259,19 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
 app.post('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios' });
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigat\u00f3rios' });
     const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) return res.status(400).json({ error: 'Email já cadastrado' });
+    if (existing.rows.length > 0) return res.status(400).json({ error: 'Email j\u00e1 cadastrado' });
     const hash = await bcrypt.hash(password, 10);
+    // Ressincroniza a sequencia antes de inserir
+    await client.query(`SELECT setval(pg_get_serial_sequence('users','id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false)`);
     const result = await client.query(
       `INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'user', true) RETURNING id, email, role, is_active, created_at`,
       [email, hash]
     );
     res.json(result.rows[0]);
   } catch (error) {
+    console.error('Error creating user:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
