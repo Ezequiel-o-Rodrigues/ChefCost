@@ -144,9 +144,15 @@ const createTables = async () => {
   `);
 };
 
-createTables();
-
-// === MAPPERS snake_case -> camelCase ===
+createTables()
+  .then(() => {
+    const port = Number(process.env.PORT || 3001);
+    app.listen(port, () => console.log(`Server running on port ${port}`));
+  })
+  .catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });
 const mapMaterial = (r) => ({
   id: String(r.id),
   name: r.name,
@@ -487,9 +493,4 @@ app.get('/api/debug', authenticateToken, async (req, res) => {
 // Serve React app for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-const port = Number(process.env.PORT || 3001);
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
 });
