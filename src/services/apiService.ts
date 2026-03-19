@@ -7,10 +7,10 @@ const req = (url: string, options?: RequestInit) =>
   fetch(url, { ...options, headers: authService.getAuthHeaders() });
 
 export const apiService = {
-  getMaterials: (email: string) => req(`${BASE()}/materials/${email}`).then(r => r.json()) as Promise<Material[]>,
-  getRecipes: (email: string) => req(`${BASE()}/recipes/${email}`).then(r => r.json()) as Promise<Recipe[]>,
-  getConversions: (email: string) => req(`${BASE()}/conversions/${email}`).then(r => r.json()) as Promise<Conversion[]>,
-  getSettings: (email: string) => req(`${BASE()}/settings/${email}`).then(r => r.json()) as Promise<AppSettings>,
+  getMaterials: () => req(`${BASE()}/materials`).then(r => r.json()) as Promise<Material[]>,
+  getRecipes: () => req(`${BASE()}/recipes`).then(r => r.json()) as Promise<Recipe[]>,
+  getConversions: () => req(`${BASE()}/conversions`).then(r => r.json()) as Promise<Conversion[]>,
+  getSettings: () => req(`${BASE()}/settings`).then(r => r.json()) as Promise<AppSettings>,
 
   createMaterial: (material: Omit<Material, 'id' | 'userId'>) =>
     req(`${BASE()}/materials`, { method: 'POST', body: JSON.stringify(material) }),

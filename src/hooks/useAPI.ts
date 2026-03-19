@@ -11,19 +11,18 @@ export const useAPI = (userEmail: string | null) => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    if (!userEmail) return;
     setLoading(true);
     try {
       const [m, r, c, s] = await Promise.all([
-        apiService.getMaterials(userEmail),
-        apiService.getRecipes(userEmail),
-        apiService.getConversions(userEmail),
-        apiService.getSettings(userEmail),
+        apiService.getMaterials(),
+        apiService.getRecipes(),
+        apiService.getConversions(),
+        apiService.getSettings(),
       ]);
-      setMaterials(m);
-      setRecipes(r);
-      setConversions(c);
-      setSettings(s);
+      setMaterials(Array.isArray(m) ? m : []);
+      setRecipes(Array.isArray(r) ? r : []);
+      setConversions(Array.isArray(c) ? c : []);
+      setSettings(s?.hourlyRate !== undefined ? s : { hourlyRate: 25, energyRate: 5 });
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

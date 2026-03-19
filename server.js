@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import { Client } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -40,10 +41,7 @@ app.use(express.static(path.join(__dirname, 'dist'), {
 
 // Database configuration
 const clientConfig = process.env.DATABASE_URL
-  ? {
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    }
+  ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
   : {
       host: process.env.PGHOST,
       database: process.env.PGDATABASE,
@@ -52,14 +50,11 @@ const clientConfig = process.env.DATABASE_URL
       ssl: { rejectUnauthorized: false },
     };
 
-const client = new Client(clientConfig);
+const client = new Pool(clientConfig);
 
 client.connect()
   .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => {
-    console.error('Connection error', err);
-    process.exit(1);
-  });
+  .catch(err => console.error('Connection error', err));
 
 // Create tables if not exist
 const createTables = async () => {
@@ -172,7 +167,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const token = jwt.sign({ email, userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, email });
+    res.json({ token, email, userId: user.id });
   } catch (error) {
     console.error('Error on login:', error);
     res.status(500).json({ error: 'Erro ao fazer login' });
@@ -205,7 +200,7 @@ app.post('/api/auth/register', async (req, res) => {
     );
 
     const token = jwt.sign({ email, userId: result.rows[0].id }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, email, message: 'Usuário criado com sucesso' });
+    res.json({ token, email, userId: result.rows[0].id, message: 'Usuário criado com sucesso' });
   } catch (error) {
     console.error('Error on register:', error);
     res.status(500).json({ error: 'Erro ao registrar usuário' });
@@ -215,12 +210,8 @@ app.post('/api/auth/register', async (req, res) => {
 // === DATA ENDPOINTS (com autenticação) ===
 
 // MATERIALS
-app.get('/api/materials/:userId', authenticateToken, async (req, res) => {
+app.get('/api/materials', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    if (parseInt(userId) !== req.userId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
     const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [req.userId]);
     res.json(result.rows);
   } catch (error) {
@@ -273,12 +264,8 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
 });
 
 // RECIPES
-app.get('/api/recipes/:userId', authenticateToken, async (req, res) => {
+app.get('/api/recipes', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    if (parseInt(userId) !== req.userId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
     const result = await client.query('SELECT * FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [req.userId]);
     const recipes = [];
     for (const row of result.rows) {
@@ -354,13 +341,9 @@ app.delete('/api/recipes/:id', authenticateToken, async (req, res) => {
 });
 
 // CONVERSIONS
-app.get('/api/conversions/:userId', authenticateToken, async (req, res) => {
+app.get('/api/conversions', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    if (userId !== req.userId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-    const result = await client.query('SELECT * FROM conversions WHERE user_id = $1', [userId]);
+    const result = await client.query('SELECT * FROM conversions WHERE user_id = $1', [req.userId]);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching conversions:', error.message, error);
@@ -397,13 +380,9 @@ app.delete('/api/conversions/:id', authenticateToken, async (req, res) => {
 });
 
 // SETTINGS
-app.get('/api/settings/:userId', authenticateToken, async (req, res) => {
+app.get('/api/settings', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    if (userId !== req.userId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-    const result = await client.query('SELECT * FROM settings WHERE user_id = $1', [userId]);
+    const result = await client.query('SELECT * FROM settings WHERE user_id = $1', [req.userId]);
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
     } else {
