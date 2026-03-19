@@ -27,12 +27,12 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
             <h2 className="text-xl font-display font-bold">O que é o ChefCost?</h2>
           </div>
           <p className="text-gray-600 leading-relaxed">
-            O ChefCost é uma ferramenta inteligente projetada para ajudar confeiteiros e gastrônomos a calcularem o custo real de suas produções e precificarem seus produtos de forma justa e lucrativa.
+            O ChefCost é o seu novo caderno de receitas digital inteligente. Ele foi criado de forma simples para ajudar você, que faz maravilhas na cozinha, a saber exatamente quanto gasta na produção de um prato ou doce, e por qual valor deve vendê-lo para ter lucro de verdade. Esqueça contas difíceis, deixe a matemática com a gente!
           </p>
         </section>
 
         <section className="space-y-6">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Passo a Passo</h3>
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Passo a Passo (Fácil e rápido)</h3>
           
           <div className="space-y-8">
             <div className="flex gap-4">
@@ -40,9 +40,9 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-bold text-burgundy">
                   <ShoppingBasket size={18} />
-                  <h4>Cadastre seus Insumos</h4>
+                  <h4>Passo 1: Cadastre seus Ingredientes ("Insumos")</h4>
                 </div>
-                <p className="text-sm text-gray-500">Comece adicionando tudo o que você compra. Informe o preço pago e a quantidade da embalagem. O sistema calculará automaticamente o custo por grama ou mililitro.</p>
+                <p className="text-sm text-gray-500">Vá na aba "Insumos" para adicionar tudo o que você compra no supermercado (como leite, farinha, embalagens). Diga qual foi o valor que você pagou no pacote fechado, e o aplicativo fará as contas dividindo para achar o preço de cada grama sozinho!</p>
               </div>
             </div>
 
@@ -51,9 +51,9 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-bold text-burgundy">
                   <Calculator size={18} />
-                  <h4>Crie suas Receitas</h4>
+                  <h4>Passo 2: Monte suas Receitas</h4>
                 </div>
-                <p className="text-sm text-gray-500">Monte suas fichas técnicas selecionando os insumos cadastrados. Informe o rendimento da receita e a margem de lucro desejada.</p>
+                <p className="text-sm text-gray-500">Na aba "Receitas", você vai juntar os ingredientes que acabou de cadastrar para montar o seu bolo ou prato. Diga quantas porções a receita rende e quanto de lucro (dinheiro extra além dos custos) você deseja ganhar. Pronto: o preço sugerido de venda aparecerá na tela!</p>
               </div>
             </div>
 
@@ -62,9 +62,9 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-bold text-burgundy">
                   <Settings size={18} />
-                  <h4>Ajuste seus Custos Fixos</h4>
+                  <h4>Passo 3: Adicione seus Custos Adicionais</h4>
                 </div>
-                <p className="text-sm text-gray-500">Na aba de Ajustes, defina o valor da sua hora de trabalho e os custos estimados de energia e gás. Isso é fundamental para uma precificação precisa.</p>
+                <p className="text-sm text-gray-500">O seu trabalho tem valor! Por isso, na aba de "Ajustes", coloque um valor para a sua hora de trabalho, além do custo mensal estimado com energia e gás (nós damos algumas sugestões no app). Isso ajudará a garantir que sua empresa não está pagando para você trabalhar nela.</p>
               </div>
             </div>
           </div>
@@ -76,9 +76,9 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
             <h2 className="text-xl font-display font-bold">Dicas de Ouro</h2>
           </div>
           <ul className="space-y-3 text-sm text-gray-600 list-disc pl-4">
-            <li>Sempre atualize o preço dos insumos quando houver reajuste no mercado.</li>
-            <li>Não esqueça de incluir embalagens como insumos para um custo total real.</li>
-            <li>Use a margem de lucro para cobrir imprevistos e reinvestir no seu negócio.</li>
+            <li>Sempre que for ao mercado e um produto estiver mais caro, lembre-se de voltar no app e atualizar o preço dele!</li>
+            <li>A embalagem do produto (caixinha, etiqueta, laço de fita) também tem que entrar na conta. Cadastre-as como ingredientes para o seu dinheiro não sair pelo ralo!</li>
+            <li>Não tenha medo de cobrar o preço justo usando a Margem de Lucro; o ChefCost vai garantir que é um bom preço para o seu cliente e para o seu bolso.</li>
           </ul>
         </section>
 
