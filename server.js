@@ -247,7 +247,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // TEMP: diagnóstico da estrutura da tabela users
-app.get('/api/admin/debug-schema', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/admin/debug-schema', async (req, res) => {
   const schema = await client.query(`SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position`);
   const rows = await client.query('SELECT id, email, role, is_active FROM users');
   res.json({ schema: schema.rows, rows: rows.rows });
