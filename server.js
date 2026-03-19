@@ -124,6 +124,47 @@ const createTables = async () => {
 
 createTables();
 
+// === MAPPERS snake_case -> camelCase ===
+const mapMaterial = (r) => ({
+  id: String(r.id),
+  name: r.name,
+  unit: r.unit,
+  packageQty: r.package_qty,
+  pricePaid: r.price_paid,
+  pricePerMinUnit: r.price_per_min_unit,
+  userId: String(r.user_id),
+});
+
+const mapRecipe = (r, items = []) => ({
+  id: String(r.id),
+  name: r.name,
+  yield: r.yield,
+  profitMargin: r.profit_margin,
+  packagingCost: r.packaging_cost,
+  laborCost: r.labor_cost,
+  energyCost: r.energy_cost,
+  wasteFactor: r.waste_factor,
+  userId: String(r.user_id),
+  createdAt: new Date(r.created_at).getTime(),
+  items: items.map(i => ({
+    materialId: String(i.material_id),
+    qty: i.qty,
+    unit: i.unit,
+  })),
+});
+
+const mapConversion = (r) => ({
+  id: String(r.id),
+  name: r.name,
+  grams: r.grams,
+  userId: String(r.user_id),
+});
+
+const mapSettings = (r) => ({
+  hourlyRate: r.hourly_rate,
+  energyRate: r.energy_rate,
+});
+
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -213,7 +254,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.get('/api/materials', authenticateToken, async (req, res) => {
   try {
     const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [req.userId]);
-    res.json(result.rows);
+    res.json(result.rows.map(mapMaterial));
   } catch (error) {
     console.error('Error fetching materials:', error.message, error);
     res.status(500).json({ error: 'Erro ao buscar insumos', details: error.message });
@@ -223,14 +264,11 @@ app.get('/api/materials', authenticateToken, async (req, res) => {
 app.post('/api/materials', authenticateToken, async (req, res) => {
   try {
     const { name, unit, packageQty, pricePaid, pricePerMinUnit } = req.body;
-    const userId = req.userId;
-    console.log('POST /api/materials - userId:', userId, 'data:', { name, unit, packageQty, pricePaid, pricePerMinUnit });
-    
     const result = await client.query(
       'INSERT INTO materials (name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, unit, packageQty, pricePaid, pricePerMinUnit, userId]
+      [name, unit, packageQty, pricePaid, pricePerMinUnit, req.userId]
     );
-    res.json(result.rows[0]);
+    res.json(mapMaterial(result.rows[0]));
   } catch (error) {
     console.error('Error inserting material:', error.message, error);
     res.status(500).json({ error: 'Erro ao adicionar insumo', details: error.message });
@@ -270,7 +308,7 @@ app.get('/api/recipes', authenticateToken, async (req, res) => {
     const recipes = [];
     for (const row of result.rows) {
       const itemsResult = await client.query('SELECT * FROM recipe_items WHERE recipe_id = $1', [row.id]);
-      recipes.push({ ...row, items: itemsResult.rows });
+      recipes.push(mapRecipe(row, itemsResult.rows));
     }
     res.json(recipes);
   } catch (error) {
@@ -282,12 +320,9 @@ app.get('/api/recipes', authenticateToken, async (req, res) => {
 app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
-    const userId = req.userId;
-    console.log('POST /api/recipes - userId:', userId, 'recipe:', { name, yieldVal });
-    
     const result = await client.query(
       'INSERT INTO recipes (name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, userId]
+      [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, req.userId]
     );
     const recipe = result.rows[0];
     if (items && items.length > 0) {
@@ -298,7 +333,7 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
         );
       }
     }
-    res.json(recipe);
+    res.json(mapRecipe(recipe, items || []));
   } catch (error) {
     console.error('Error creating recipe:', error.message, error);
     res.status(500).json({ error: 'Erro ao criar receita', details: error.message });
@@ -344,7 +379,7 @@ app.delete('/api/recipes/:id', authenticateToken, async (req, res) => {
 app.get('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const result = await client.query('SELECT * FROM conversions WHERE user_id = $1', [req.userId]);
-    res.json(result.rows);
+    res.json(result.rows.map(mapConversion));
   } catch (error) {
     console.error('Error fetching conversions:', error.message, error);
     res.status(500).json({ error: 'Erro ao buscar conversões', details: error.message });
@@ -354,14 +389,11 @@ app.get('/api/conversions', authenticateToken, async (req, res) => {
 app.post('/api/conversions', authenticateToken, async (req, res) => {
   try {
     const { name, grams } = req.body;
-    const userId = req.userId;
-    console.log('POST /api/conversions - userId:', userId, 'data:', { name, grams });
-    
     const result = await client.query(
       'INSERT INTO conversions (name, grams, user_id) VALUES ($1, $2, $3) RETURNING *',
-      [name, grams, userId]
+      [name, grams, req.userId]
     );
-    res.json(result.rows[0]);
+    res.json(mapConversion(result.rows[0]));
   } catch (error) {
     console.error('Error inserting conversion:', error.message, error);
     res.status(500).json({ error: 'Erro ao adicionar conversão', details: error.message });
@@ -383,11 +415,7 @@ app.delete('/api/conversions/:id', authenticateToken, async (req, res) => {
 app.get('/api/settings', authenticateToken, async (req, res) => {
   try {
     const result = await client.query('SELECT * FROM settings WHERE user_id = $1', [req.userId]);
-    if (result.rows.length > 0) {
-      res.json(result.rows[0]);
-    } else {
-      res.json({ hourlyRate: 25, energyRate: 5 });
-    }
+    res.json(result.rows.length > 0 ? mapSettings(result.rows[0]) : { hourlyRate: 25, energyRate: 5 });
   } catch (error) {
     console.error('Error fetching settings:', error.message, error);
     res.status(500).json({ error: 'Erro ao buscar configurações', details: error.message });
