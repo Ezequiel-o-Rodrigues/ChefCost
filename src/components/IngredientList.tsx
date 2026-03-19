@@ -1,40 +1,38 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Material } from '../types';
+import { IngredientForm } from './IngredientForm';
+
+interface IngredientListProps {
+  materials: Material[];
+  onAdd: () => void;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, material: Omit<Material, 'id' | 'userId' | 'pricePerMinUnit'>) => void;
+}
 
 const getDisplayPrice = (material: Material): string => {
   const { unit, pricePerMinUnit } = material;
-  // pricePerMinUnit é sempre por g/ml/un — converte de volta para a unidade do usuário
   const factor = unit === 'kg' || unit === 'L' ? 1000 : 1;
   const pricePerUnit = pricePerMinUnit * factor;
   const decimals = pricePerUnit < 0.1 ? 4 : 2;
   return `R$ ${pricePerUnit.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}/${unit}`;
 };
 
-interface IngredientListProps {
-  materials: Material[];
-  onAdd: () => void;
-  onDelete: (id: string) => void;
-}
+export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd, onDelete, onUpdate }) => {
+  const [editing, setEditing] = useState<Material | null>(null);
 
-export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd, onDelete }) => {
   return (
     <div className="p-6 pt-20 space-y-6">
       <header className="flex justify-between items-center">
         <h1 className="text-2xl font-display font-bold text-burgundy">Insumos</h1>
-        <button 
+        <button
           onClick={onAdd}
           className="bg-pastel-pink p-2 rounded-full text-burgundy active:scale-90 transition-transform"
         >
           <Plus size={24} />
         </button>
       </header>
-      
+
       <div className="space-y-3">
         {materials.length === 0 ? (
           <div className="text-center py-12 space-y-3">
@@ -50,13 +48,17 @@ export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd
                   {item.packageQty}{item.unit} • R$ {item.pricePaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-burgundy font-bold">{getDisplayPrice(item)}</p>
-                </div>
-                <button 
+              <div className="flex items-center gap-3">
+                <p className="text-burgundy font-bold">{getDisplayPrice(item)}</p>
+                <button
+                  onClick={() => setEditing(item)}
+                  className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-burgundy"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
                   onClick={() => onDelete(item.id!)}
-                  className="text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-red-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -65,6 +67,14 @@ export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd
           ))
         )}
       </div>
+
+      {editing && (
+        <IngredientForm
+          initialData={editing}
+          onSave={(data) => { onUpdate(editing.id!, data); setEditing(null); }}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   );
 };

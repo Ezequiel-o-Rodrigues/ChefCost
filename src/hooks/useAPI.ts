@@ -41,6 +41,12 @@ export const useAPI = (userEmail: string | null) => {
     fetchData();
   };
 
+  const updateMaterial = async (id: string, material: Omit<Material, 'id' | 'userId' | 'pricePerMinUnit'>) => {
+    const pricePerMinUnit = calcPricePerMinUnit(material.pricePaid, material.packageQty, material.unit);
+    await apiService.updateMaterial(id, { ...material, pricePerMinUnit });
+    fetchData();
+  };
+
   const deleteMaterial = async (id: string) => {
     await apiService.deleteMaterial(id);
     fetchData();
@@ -48,6 +54,11 @@ export const useAPI = (userEmail: string | null) => {
 
   const addRecipe = async (recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) => {
     await apiService.createRecipe(recipe);
+    fetchData();
+  };
+
+  const updateRecipe = async (id: string, recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) => {
+    await apiService.updateRecipe(id, recipe);
     fetchData();
   };
 
@@ -73,8 +84,8 @@ export const useAPI = (userEmail: string | null) => {
 
   return {
     materials, recipes, conversions, settings, loading,
-    addMaterial, deleteMaterial,
-    addRecipe, deleteRecipe,
+    addMaterial, updateMaterial, deleteMaterial,
+    addRecipe, updateRecipe, deleteRecipe,
     addConversion, deleteConversion,
     updateSettings,
   };

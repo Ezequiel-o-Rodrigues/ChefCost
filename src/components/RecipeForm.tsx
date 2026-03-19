@@ -59,7 +59,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, onSave, onClo
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
       <div className="bg-white w-full max-w-md rounded-3xl p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-display font-bold text-burgundy">Nova Receita</h2>
+          <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Receita' : 'Nova Receita'}</h2>
           <button onClick={onClose} className="text-gray-400 p-1">
             <X size={24} />
           </button>
@@ -165,7 +165,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, onSave, onClo
 
           <div className="pt-4">
             <button type="submit" className="w-full btn-primary">
-              Salvar Receita
+              {initialData ? 'Atualizar Receita' : 'Salvar Receita'}
             </button>
           </div>
         </form>

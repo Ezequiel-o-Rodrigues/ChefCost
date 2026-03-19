@@ -1,36 +1,36 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React from 'react';
-import { Plus, Trash2, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Recipe, Material } from '../types';
 import { calculateRecipeTotalCost } from '../utils/calculations';
 import { toMaterialsMap } from '../utils/materialUtils';
+import { RecipeForm } from './RecipeForm';
 
 interface RecipeListProps {
   recipes: Recipe[];
   materials: Material[];
   onAdd: () => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) => void;
 }
 
-export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, onAdd, onDelete }) => {
+const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, onAdd, onDelete, onUpdate }) => {
+  const [editing, setEditing] = useState<Recipe | null>(null);
   const materialsMap = toMaterialsMap(materials);
 
   return (
     <div className="p-6 pt-20 space-y-6">
       <header className="flex justify-between items-center">
         <h1 className="text-2xl font-display font-bold text-burgundy">Receitas</h1>
-        <button 
+        <button
           onClick={onAdd}
           className="bg-pastel-pink p-2 rounded-full text-burgundy active:scale-90 transition-transform"
         >
           <Plus size={24} />
         </button>
       </header>
-      
+
       <div className="space-y-4">
         {recipes.length === 0 ? (
           <div className="text-center py-12 space-y-3">
@@ -42,13 +42,22 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, onAd
             const { costPerUnit, suggestedPrice } = calculateRecipeTotalCost(recipe, materialsMap);
             return (
               <div key={recipe.id} className="card bg-white space-y-4 group relative">
-                <button 
-                  onClick={() => onDelete(recipe.id!)}
-                  className="absolute top-4 right-4 text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={18} />
-                </button>
-                
+                {/* Ações */}
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => setEditing(recipe)}
+                    className="text-gray-300 hover:text-burgundy"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(recipe.id!)}
+                    className="text-red-300 hover:text-red-500"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+
                 <div className="space-y-1">
                   <h3 className="font-bold text-lg text-burgundy">{recipe.name}</h3>
                   <div className="flex gap-2">
@@ -64,22 +73,27 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, onAd
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-50">
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Custo/Unidade</p>
-                    <p className="font-bold text-gray-700">R$ {costPerUnit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    <p className="font-bold text-gray-700">R$ {fmt(costPerUnit)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Preço Sugerido</p>
-                    <p className="text-burgundy font-bold text-xl">R$ {suggestedPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    <p className="text-burgundy font-bold text-xl">R$ {fmt(suggestedPrice)}</p>
                   </div>
                 </div>
-
-                <button className="w-full flex items-center justify-center gap-2 text-xs font-bold text-burgundy opacity-60 hover:opacity-100 transition-opacity pt-2">
-                  <FileText size={14} /> Gerar Ordem de Produção
-                </button>
               </div>
             );
           })
         )}
       </div>
+
+      {editing && (
+        <RecipeForm
+          materials={materials}
+          initialData={editing}
+          onSave={(data) => { onUpdate(editing.id!, data); setEditing(null); }}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   );
 };

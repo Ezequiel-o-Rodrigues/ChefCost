@@ -15,11 +15,17 @@ export const apiService = {
   createMaterial: (material: Omit<Material, 'id' | 'userId'>) =>
     req(`${BASE()}/materials`, { method: 'POST', body: JSON.stringify(material) }),
 
+  updateMaterial: (id: string, material: Omit<Material, 'id' | 'userId'>) =>
+    req(`${BASE()}/materials/${id}`, { method: 'PUT', body: JSON.stringify(material) }),
+
   deleteMaterial: (id: string) =>
     req(`${BASE()}/materials/${id}`, { method: 'DELETE' }),
 
   createRecipe: (recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) =>
     req(`${BASE()}/recipes`, { method: 'POST', body: JSON.stringify(recipe) }),
+
+  updateRecipe: (id: string, recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) =>
+    req(`${BASE()}/recipes/${id}`, { method: 'PUT', body: JSON.stringify(recipe) }),
 
   deleteRecipe: (id: string) =>
     req(`${BASE()}/recipes/${id}`, { method: 'DELETE' }),

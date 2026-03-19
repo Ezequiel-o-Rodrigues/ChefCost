@@ -32,8 +32,8 @@ function AppContent() {
   const { userEmail, isAuthenticated, login, logout } = useAuth();
   const {
     materials, recipes, conversions, settings, loading,
-    addMaterial, deleteMaterial,
-    addRecipe, deleteRecipe,
+    addMaterial, updateMaterial, deleteMaterial,
+    addRecipe, updateRecipe, deleteRecipe,
     addConversion, deleteConversion,
     updateSettings,
   } = useAPI(userEmail);
@@ -65,9 +65,9 @@ function AppContent() {
       case 'dashboard':
         return <DashboardSummary materials={materials} recipes={recipes} />;
       case 'ingredients':
-        return <IngredientList materials={materials} onAdd={() => setShowIngredientForm(true)} onDelete={deleteMaterial} />;
+        return <IngredientList materials={materials} onAdd={() => setShowIngredientForm(true)} onDelete={deleteMaterial} onUpdate={updateMaterial} />;
       case 'recipes':
-        return <RecipeList recipes={recipes} materials={materials} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} />;
+        return <RecipeList recipes={recipes} materials={materials} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} onUpdate={updateRecipe} />;
       case 'settings':
         return (
           <div className="p-6 pt-20 space-y-6">
