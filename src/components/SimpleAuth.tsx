@@ -1,13 +1,8 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
 import { LogIn, ChefHat } from 'lucide-react';
 
 interface SimpleAuthProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, password: string) => Promise<void>;
 }
 
 export const SimpleAuth: React.FC<SimpleAuthProps> = ({ onLogin }) => {
@@ -20,30 +15,10 @@ export const SimpleAuth: React.FC<SimpleAuthProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const apiUrl = window.location.origin + '/api/auth/login';
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Erro ao fazer login');
-        return;
-      }
-
-      // Salva o token e email no localStorage
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userEmail', email);
-      
-      onLogin(email);
-    } catch (err) {
-      setError('Erro de conexão. Tente novamente.');
-      console.error(err);
+      await onLogin(email, password);
+    } catch (err: any) {
+      setError(err.message || 'Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -62,39 +37,24 @@ export const SimpleAuth: React.FC<SimpleAuthProps> = ({ onLogin }) => {
       </div>
 
       <form onSubmit={handleLogin} className="w-full max-w-xs space-y-4">
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-white border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink focus:border-transparent transition-all"
-          />
-        </div>
-
-        <div>
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-white border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink focus:border-transparent transition-all"
-          />
-        </div>
-
-        {error && (
-          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-primary w-full flex items-center justify-center gap-3 disabled:opacity-50"
-        >
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full bg-white border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink focus:border-transparent transition-all"
+        />
+        <input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full bg-white border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink focus:border-transparent transition-all"
+        />
+        {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>}
+        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-3 disabled:opacity-50">
           <LogIn size={20} />
           {loading ? 'Entrando...' : 'Entrar'}
         </button>

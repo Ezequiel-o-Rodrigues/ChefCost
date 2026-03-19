@@ -7,6 +7,7 @@ import React from 'react';
 import { Plus, Trash2, FileText } from 'lucide-react';
 import { Recipe, Material } from '../types';
 import { calculateRecipeTotalCost } from '../utils/calculations';
+import { toMaterialsMap } from '../utils/materialUtils';
 
 interface RecipeListProps {
   recipes: Recipe[];
@@ -16,7 +17,7 @@ interface RecipeListProps {
 }
 
 export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, onAdd, onDelete }) => {
-  const materialsMap = materials.reduce((acc, m) => ({ ...acc, [m.id!]: m }), {} as Record<string, Material>);
+  const materialsMap = toMaterialsMap(materials);
 
   return (
     <div className="p-6 pt-20 space-y-6">

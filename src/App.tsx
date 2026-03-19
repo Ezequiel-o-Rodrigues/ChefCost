@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LayoutDashboard, ShoppingBasket, BookOpen, Settings as SettingsIcon, Menu, ChefHat } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-// Components
 import { DashboardSummary } from './components/DashboardSummary';
 import { IngredientList } from './components/IngredientList';
 import { RecipeList } from './components/RecipeList';
@@ -22,7 +21,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/Sidebar';
 import { Documentation } from './components/Documentation';
 
-// Hooks
+import { useAuth } from './hooks/useAuth';
 import { useAPI } from './hooks/useAPI';
 
 function cn(...inputs: ClassValue[]) {
@@ -30,33 +29,14 @@ function cn(...inputs: ClassValue[]) {
 }
 
 function AppContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Verificar se há token salvo no localStorage
-    const token = localStorage.getItem('authToken');
-    const email = localStorage.getItem('userEmail');
-    if (token && email) {
-      setIsAuthenticated(true);
-      setUserEmail(email);
-    }
-  }, []);
-
-  const { 
-    materials, 
-    recipes, 
-    conversions, 
-    settings, 
-    loading,
-    addMaterial,
-    deleteMaterial,
-    addRecipe,
-    deleteRecipe,
-    addConversion,
-    deleteConversion,
-    updateSettings
-  } = useAPI();
+  const { userEmail, isAuthenticated, login, logout } = useAuth();
+  const {
+    materials, recipes, conversions, settings, loading,
+    addMaterial, deleteMaterial,
+    addRecipe, deleteRecipe,
+    addConversion, deleteConversion,
+    updateSettings,
+  } = useAPI(userEmail);
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ingredients' | 'recipes' | 'settings'>('dashboard');
   const [showIngredientForm, setShowIngredientForm] = useState(false);
@@ -65,10 +45,7 @@ function AppContent() {
   const [showDocs, setShowDocs] = useState(false);
 
   if (!isAuthenticated) {
-    return <SimpleAuth onLogin={(email) => {
-      setIsAuthenticated(true);
-      setUserEmail(email);
-    }} />;
+    return <SimpleAuth onLogin={login} />;
   }
 
   if (loading) {
@@ -85,13 +62,13 @@ function AppContent() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': 
+      case 'dashboard':
         return <DashboardSummary materials={materials} recipes={recipes} />;
-      case 'ingredients': 
+      case 'ingredients':
         return <IngredientList materials={materials} onAdd={() => setShowIngredientForm(true)} onDelete={deleteMaterial} />;
-      case 'recipes': 
+      case 'recipes':
         return <RecipeList recipes={recipes} materials={materials} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} />;
-      case 'settings': 
+      case 'settings':
         return (
           <div className="p-6 pt-20 space-y-6">
             <header>
@@ -101,21 +78,19 @@ function AppContent() {
             <ConversionForm conversions={conversions} onSave={addConversion} onDelete={deleteConversion} />
           </div>
         );
-      default: 
+      default:
         return <DashboardSummary materials={materials} recipes={recipes} />;
     }
   };
 
   return (
     <div className="min-h-screen pb-24 max-w-md mx-auto relative bg-creme shadow-2xl overflow-hidden">
-      {/* Watermark Logo */}
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
         <ChefHat size={300} className="text-burgundy" />
       </div>
 
-      {/* Menu Button */}
       <div className="absolute top-6 left-6 z-40">
-        <button 
+        <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm text-burgundy active:scale-90 transition-transform"
         >
@@ -123,14 +98,11 @@ function AppContent() {
         </button>
       </div>
 
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
         onOpenDocs={() => setShowDocs(true)}
-        onLogout={() => {
-          setIsAuthenticated(false);
-          setUserEmail(null);
-        }}
+        onLogout={logout}
       />
 
       <AnimatePresence mode="wait">
@@ -146,48 +118,27 @@ function AppContent() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Forms Modals */}
       {showIngredientForm && (
-        <IngredientForm 
-          onSave={addMaterial} 
-          onClose={() => setShowIngredientForm(false)} 
-        />
+        <IngredientForm onSave={addMaterial} onClose={() => setShowIngredientForm(false)} />
       )}
       {showRecipeForm && (
-        <RecipeForm 
-          materials={materials} 
-          onSave={addRecipe} 
-          onClose={() => setShowRecipeForm(false)} 
-        />
+        <RecipeForm materials={materials} onSave={addRecipe} onClose={() => setShowRecipeForm(false)} />
       )}
 
-      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-black/5 flex justify-around items-center h-20 px-4 z-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        <button 
-          onClick={() => setActiveTab('dashboard')}
-          className={cn("bottom-nav-item", activeTab === 'dashboard' && "active")}
-        >
+        <button onClick={() => setActiveTab('dashboard')} className={cn('bottom-nav-item', activeTab === 'dashboard' && 'active')}>
           <LayoutDashboard size={24} />
           <span className="text-[10px] mt-1 font-bold uppercase">Início</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('ingredients')}
-          className={cn("bottom-nav-item", activeTab === 'ingredients' && "active")}
-        >
+        <button onClick={() => setActiveTab('ingredients')} className={cn('bottom-nav-item', activeTab === 'ingredients' && 'active')}>
           <ShoppingBasket size={24} />
           <span className="text-[10px] mt-1 font-bold uppercase">Insumos</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('recipes')}
-          className={cn("bottom-nav-item", activeTab === 'recipes' && "active")}
-        >
+        <button onClick={() => setActiveTab('recipes')} className={cn('bottom-nav-item', activeTab === 'recipes' && 'active')}>
           <BookOpen size={24} />
           <span className="text-[10px] mt-1 font-bold uppercase">Receitas</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('settings')}
-          className={cn("bottom-nav-item", activeTab === 'settings' && "active")}
-        >
+        <button onClick={() => setActiveTab('settings')} className={cn('bottom-nav-item', activeTab === 'settings' && 'active')}>
           <SettingsIcon size={24} />
           <span className="text-[10px] mt-1 font-bold uppercase">Ajustes</span>
         </button>

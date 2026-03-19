@@ -6,6 +6,7 @@
 import React from 'react';
 import { Material, Recipe } from '../types';
 import { calculateRecipeTotalCost } from '../utils/calculations';
+import { toMaterialsMap } from '../utils/materialUtils';
 
 interface DashboardSummaryProps {
   materials: Material[];
@@ -13,7 +14,7 @@ interface DashboardSummaryProps {
 }
 
 export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, recipes }) => {
-  const materialsMap = materials.reduce((acc, m) => ({ ...acc, [m.id!]: m }), {} as Record<string, Material>);
+  const materialsMap = toMaterialsMap(materials);
   
   const totalProfit = recipes.reduce((acc, recipe) => {
     const { suggestedPrice, costPerUnit } = calculateRecipeTotalCost(recipe, materialsMap);
