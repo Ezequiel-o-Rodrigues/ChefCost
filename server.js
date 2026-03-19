@@ -80,10 +80,11 @@ const createTables = async () => {
   const adminHash = await bcrypt.hash('ezequiel2014', 10);
   const existing = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
   if (existing.rows.length === 0) {
-    await client.query(`SELECT setval(pg_get_serial_sequence('users','id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false)`);
+    const maxId = await client.query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM users');
+    const nextId = maxId.rows[0].next_id;
     await client.query(
-      `INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'admin', true)`,
-      [adminEmail, adminHash]
+      `INSERT INTO users (id, email, password_hash, role, is_active) VALUES ($1, $2, $3, 'admin', true)`,
+      [nextId, adminEmail, adminHash]
     );
   } else {
     await client.query(
@@ -263,11 +264,12 @@ app.post('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =
     const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) return res.status(400).json({ error: 'Email j\u00e1 cadastrado' });
     const hash = await bcrypt.hash(password, 10);
-    // Ressincroniza a sequencia antes de inserir
-    await client.query(`SELECT setval(pg_get_serial_sequence('users','id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false)`);
+    // Calcula proximo ID manualmente para compatibilidade com Neon
+    const maxId = await client.query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM users');
+    const nextId = maxId.rows[0].next_id;
     const result = await client.query(
-      `INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'user', true) RETURNING id, email, role, is_active, created_at`,
-      [email, hash]
+      `INSERT INTO users (id, email, password_hash, role, is_active) VALUES ($1, $2, $3, 'user', true) RETURNING id, email, role, is_active, created_at`,
+      [nextId, email, hash]
     );
     res.json(result.rows[0]);
   } catch (error) {
