@@ -7,6 +7,15 @@ import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Material } from '../types';
 
+const getDisplayPrice = (material: Material): string => {
+  const { unit, pricePerMinUnit } = material;
+  // pricePerMinUnit é sempre por g/ml/un — converte de volta para a unidade do usuário
+  const factor = unit === 'kg' || unit === 'L' ? 1000 : 1;
+  const pricePerUnit = pricePerMinUnit * factor;
+  const decimals = pricePerUnit < 0.1 ? 4 : 2;
+  return `R$ ${pricePerUnit.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}/${unit}`;
+};
+
 interface IngredientListProps {
   materials: Material[];
   onAdd: () => void;
@@ -43,7 +52,7 @@ export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="text-burgundy font-bold">R$ {item.pricePerMinUnit.toLocaleString('pt-BR', { minimumFractionDigits: 4 })}/g</p>
+                  <p className="text-burgundy font-bold">{getDisplayPrice(item)}</p>
                 </div>
                 <button 
                   onClick={() => onDelete(item.id!)}
