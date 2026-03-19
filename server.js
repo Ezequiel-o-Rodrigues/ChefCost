@@ -129,26 +129,26 @@ const mapMaterial = (r) => ({
   id: String(r.id),
   name: r.name,
   unit: r.unit,
-  packageQty: r.package_qty,
-  pricePaid: r.price_paid,
-  pricePerMinUnit: r.price_per_min_unit,
+  packageQty: Number(r.package_qty),
+  pricePaid: Number(r.price_paid),
+  pricePerMinUnit: Number(r.price_per_min_unit),
   userId: String(r.user_id),
 });
 
 const mapRecipe = (r, items = []) => ({
   id: String(r.id),
   name: r.name,
-  yield: r.recipe_yield ?? r.yield,
-  profitMargin: r.profit_margin,
-  packagingCost: r.packaging_cost,
-  laborCost: r.labor_cost,
-  energyCost: r.energy_cost,
-  wasteFactor: r.waste_factor,
+  yield: Number(r.recipe_yield ?? r.yield ?? 1),
+  profitMargin: Number(r.profit_margin ?? 0),
+  packagingCost: Number(r.packaging_cost ?? 0),
+  laborCost: Number(r.labor_cost ?? 0),
+  energyCost: Number(r.energy_cost ?? 0),
+  wasteFactor: Number(r.waste_factor ?? 0),
   userId: String(r.user_id),
-  createdAt: new Date(r.created_at).getTime(),
+  createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
   items: items.map(i => ({
     materialId: String(i.material_id),
-    qty: i.qty,
+    qty: Number(i.qty),
     unit: i.unit,
   })),
 });
@@ -435,6 +435,13 @@ app.post('/api/settings', authenticateToken, async (req, res) => {
     console.error('Error updating settings:', error.message, error);
     res.status(500).json({ error: 'Erro ao atualizar configurações', details: error.message });
   }
+});
+
+// DEBUG - remover após diagnóstico
+app.get('/api/debug', authenticateToken, async (req, res) => {
+  const recipes = await client.query('SELECT * FROM recipes WHERE user_id = $1', [req.userId]);
+  const items = await client.query('SELECT * FROM recipe_items WHERE recipe_id = ANY($1)', [recipes.rows.map(r => r.id)]);
+  res.json({ recipes: recipes.rows, items: items.rows });
 });
 
 // Serve React app for all other routes
