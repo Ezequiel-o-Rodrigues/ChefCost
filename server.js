@@ -76,11 +76,18 @@ const createTables = async () => {
   // Garante que o admin existe e esta ativo
   const adminEmail = 'ezequielrod2020@gmail.com';
   const adminHash = await bcrypt.hash('ezequiel2014', 10);
-  await client.query(`
-    INSERT INTO users (email, password_hash, role, is_active)
-    VALUES ($1, $2, 'admin', true)
-    ON CONFLICT (email) DO UPDATE SET role = 'admin', is_active = true
-  `, [adminEmail, adminHash]);
+  const existing = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, 'admin', true)`,
+      [adminEmail, adminHash]
+    );
+  } else {
+    await client.query(
+      `UPDATE users SET role = 'admin', is_active = true WHERE email = $1`,
+      [adminEmail]
+    );
+  }
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS materials (
