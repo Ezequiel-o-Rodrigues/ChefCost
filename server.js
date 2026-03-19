@@ -80,7 +80,7 @@ const createTables = async () => {
       package_qty REAL NOT NULL,
       price_paid REAL NOT NULL,
       price_per_min_unit REAL NOT NULL,
-      user_id TEXT NOT NULL
+      user_id INTEGER NOT NULL REFERENCES users(id)
     );
   `);
 
@@ -94,7 +94,7 @@ const createTables = async () => {
       labor_cost REAL NOT NULL,
       energy_cost REAL NOT NULL,
       waste_factor REAL NOT NULL,
-      user_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL REFERENCES users(id),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -114,13 +114,13 @@ const createTables = async () => {
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       grams REAL NOT NULL,
-      user_id TEXT NOT NULL
+      user_id INTEGER NOT NULL REFERENCES users(id)
     );
   `);
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS settings (
-      user_id TEXT PRIMARY KEY,
+      user_id INTEGER PRIMARY KEY REFERENCES users(id),
       hourly_rate REAL NOT NULL,
       energy_rate REAL NOT NULL
     );
@@ -139,8 +139,8 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.email;
-    console.log('Token verified for user:', req.userId);
+    req.userId = decoded.userId; // Use numeric user ID from JWT
+    console.log('Token verified for user ID:', req.userId);
     next();
   } catch (err) {
     console.error('Token verification failed:', err.message);
@@ -218,10 +218,10 @@ app.post('/api/auth/register', async (req, res) => {
 app.get('/api/materials/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    if (userId !== req.userId) {
+    if (parseInt(userId) !== req.userId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [userId]);
+    const result = await client.query('SELECT * FROM materials WHERE user_id = $1', [req.userId]);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching materials:', error.message, error);
@@ -276,10 +276,10 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
 app.get('/api/recipes/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    if (userId !== req.userId) {
+    if (parseInt(userId) !== req.userId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const result = await client.query('SELECT * FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    const result = await client.query('SELECT * FROM recipes WHERE user_id = $1 ORDER BY created_at DESC', [req.userId]);
     const recipes = [];
     for (const row of result.rows) {
       const itemsResult = await client.query('SELECT * FROM recipe_items WHERE recipe_id = $1', [row.id]);
