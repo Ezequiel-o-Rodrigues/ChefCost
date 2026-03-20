@@ -16,6 +16,7 @@ body {
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
 }
 
 .btn-primary {
@@ -36,4 +37,20 @@ body {
 
 .bottom-nav-item.active {
   @apply text-burgundy;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-300;
 }

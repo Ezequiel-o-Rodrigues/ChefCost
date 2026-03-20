@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Trash2, Search, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeItem, Material, Unit, AppSettings } from '../types';
 
 interface RecipeFormProps {
@@ -25,15 +26,19 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
   const [wasteFactor, setWasteFactor] = useState(initialData?.wasteFactor || 0.1);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(initialData?.prepTimeMinutes || 0);
   const [items, setItems] = useState<RecipeItem[]>(initialData?.items || []);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const addItem = () => {
-    if (materials.length > 0) {
-      setItems([...items, { materialId: materials[0].id!, qty: 0, unit: 'g' }]);
+  const filteredMaterials = useMemo(() => {
+    return materials.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [materials, searchQuery]);
+
+  const handleToggleIngredient = (material: Material) => {
+    const exists = items.find(i => i.materialId === material.id);
+    if (exists) {
+      setItems(items.filter(i => i.materialId !== material.id));
+    } else {
+      setItems([{ materialId: material.id!, qty: 0, unit: 'g' }, ...items]);
     }
-  };
-
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
   };
 
   const updateItem = (index: number, field: keyof RecipeItem, value: any) => {
@@ -60,15 +65,18 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-3xl p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center">
+      <div className="bg-white w-full max-w-lg rounded-3xl p-6 space-y-6 shadow-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center flex-shrink-0">
           <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Receita' : 'Nova Receita'}</h2>
-          <button onClick={onClose} className="text-gray-400 p-1">
+          <button onClick={onClose} className="text-gray-400 p-1 hover:text-gray-600">
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 pb-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
+          
+          {/* Informações Básicas */}
           <div className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-400 uppercase">Nome da Receita</label>
@@ -77,20 +85,21 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink"
+                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink text-burgundy font-medium"
                 placeholder="Ex: Bolo de Cenoura"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-400 uppercase">Rendimento (Un)</label>
                 <input
                   required
                   type="number"
+                  min="1"
                   value={yieldQty}
-                  onChange={(e) => setYieldQty(Number(e.target.value))}
-                  className="w-full bg-creme border-none rounded-xl p-3"
+                  onChange={(e) => setYieldQty(Math.max(1, Number(e.target.value)))}
+                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium"
                 />
               </div>
               <div className="space-y-1">
@@ -98,88 +107,140 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
                 <input
                   required
                   type="number"
+                  min="0"
                   value={profitMargin}
-                  onChange={(e) => setProfitMargin(Number(e.target.value))}
-                  className="w-full bg-creme border-none rounded-xl p-3"
+                  onChange={(e) => setProfitMargin(Math.max(0, Number(e.target.value)))}
+                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Tempo de Preparo (min)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase">Tempo (min)</label>
                 <input
                   required
                   type="number"
                   min="0"
                   value={prepTimeMinutes}
-                  onChange={(e) => setPrepTimeMinutes(Number(e.target.value))}
-                  className="w-full bg-creme border-none rounded-xl p-3"
+                  onChange={(e) => setPrepTimeMinutes(Math.max(0, Number(e.target.value)))}
+                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium"
                   placeholder="Ex: 60"
                 />
               </div>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-gray-400 uppercase">Ingredientes</h3>
-              <button 
-                type="button" 
-                onClick={addItem}
-                className="text-xs bg-pastel-pink text-burgundy px-3 py-1 rounded-full font-bold flex items-center gap-1"
-              >
-                <Plus size={14} /> Adicionar
-              </button>
-            </div>
+          <div className="border-t border-gray-100 pt-6 space-y-6">
             
+            {/* Secao: A Despensa */}
             <div className="space-y-3">
-              {items.map((item, index) => (
-                <div key={index} className="bg-creme p-3 rounded-xl space-y-2 relative">
-                  <button 
-                    type="button" 
-                    onClick={() => removeItem(index)}
-                    className="absolute top-2 right-2 text-red-300 hover:text-red-500"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  
-                  <select
-                    value={item.materialId}
-                    onChange={(e) => updateItem(index, 'materialId', e.target.value)}
-                    className="w-full bg-white border-none rounded-lg p-2 text-sm"
-                  >
-                    {materials.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      required
-                      type="number"
-                      step="0.01"
-                      value={item.qty}
-                      onChange={(e) => updateItem(index, 'qty', Number(e.target.value))}
-                      className="w-full bg-white border-none rounded-lg p-2 text-sm"
-                      placeholder="Qtd"
-                    />
-                    <select
-                      value={item.unit}
-                      onChange={(e) => updateItem(index, 'unit', e.target.value as Unit)}
-                      className="w-full bg-white border-none rounded-lg p-2 text-sm"
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold text-gray-400 uppercase">Sua Despensa</h3>
+              </div>
+              
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Buscar ingrediente..."
+                  className="w-full bg-creme border-none rounded-xl p-2 pl-9 text-sm focus:ring-2 focus:ring-pastel-pink"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 custom-scrollbar">
+                {filteredMaterials.map(m => {
+                  const isAdded = items.some(i => i.materialId === m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => handleToggleIngredient(m)}
+                      className={`
+                        text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition-all active:scale-95 border
+                        ${isAdded 
+                          ? 'bg-burgundy text-white border-burgundy shadow-md scale-[0.98]' 
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-pastel-pink hover:text-burgundy'}
+                      `}
                     >
-                      <option value="g">g</option>
-                      <option value="ml">ml</option>
-                      <option value="un">un</option>
-                      <option value="kg">kg</option>
-                      <option value="L">L</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
+                      {isAdded && <Check size={12} />}
+                      {m.name}
+                    </button>
+                  );
+                })}
+                {filteredMaterials.length === 0 && (
+                  <p className="text-xs text-gray-400 py-2 w-full text-center">Nenhum ingrediente encontrado.</p>
+                )}
+              </div>
             </div>
+
+            {/* Secao: Na Panela */}
+            <div className="space-y-3 bg-creme/50 rounded-2xl p-4">
+              <h3 className="text-sm font-bold text-burgundy uppercase flex items-center gap-2">
+                Na Panela <span className="text-xs bg-white/80 text-gray-500 px-2 py-0.5 rounded-full shadow-sm">{items.length}</span>
+              </h3>
+              
+              <div className="space-y-2">
+                <AnimatePresence>
+                  {items.map((item, index) => {
+                    const material = materials.find(m => m.id === item.materialId);
+                    if (!material) return null;
+                    return (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                        exit={{ opacity: 0, height: 0, scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
+                        key={item.materialId} 
+                        className="bg-white p-3 rounded-xl flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 shadow-sm border border-gray-100/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-700 truncate">{material.name}</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            required
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={item.qty === 0 ? '' : item.qty}
+                            onChange={(e) => updateItem(index, 'qty', Number(e.target.value))}
+                            className="w-16 bg-creme border-none rounded-lg p-2 text-sm text-center focus:ring-2 focus:ring-pastel-pink"
+                            placeholder="Qtd"
+                          />
+                          <select
+                            value={item.unit}
+                            onChange={(e) => updateItem(index, 'unit', e.target.value as Unit)}
+                            className="bg-creme border-none rounded-lg p-2 text-sm focus:ring-2 focus:ring-pastel-pink text-gray-600 font-bold"
+                          >
+                            <option value="g">g</option>
+                            <option value="ml">ml</option>
+                            <option value="un">un</option>
+                            <option value="kg">kg</option>
+                            <option value="L">L</option>
+                          </select>
+                          <button 
+                            type="button" 
+                            onClick={() => handleToggleIngredient(material)}
+                            className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+                {items.length === 0 && (
+                  <p className="text-xs text-center text-gray-400 py-6">Toque nos ingredientes da Despensa para adicioná-los à panela.</p>
+                )}
+              </div>
+            </div>
+
           </div>
 
-          <div className="pt-4">
-            <button type="submit" className="w-full btn-primary">
+          <div className="pt-4 pb-2 flex-shrink-0">
+            <button type="submit" className="w-full btn-primary py-3 text-sm shadow-md">
               {initialData ? 'Atualizar Receita' : 'Salvar Receita'}
             </button>
           </div>
