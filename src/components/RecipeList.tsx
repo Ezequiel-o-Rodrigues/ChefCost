@@ -62,13 +62,14 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, sett
                   </div>
                   
                   {recipe.photoUrl && (
-                    <div className="h-48 -mx-4 -mt-4 mb-4 overflow-hidden rounded-t-2xl border-b border-gray-100">
+                    <div className="h-56 -mx-4 -mt-4 mb-4 overflow-hidden rounded-t-2xl border-b border-gray-100 relative group">
                       <img 
                         src={recipe.photoUrl} 
                         alt={recipe.name} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   )}
 

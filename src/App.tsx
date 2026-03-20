@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { LayoutDashboard, ShoppingBasket, BookOpen, Settings as SettingsIcon, Menu, ChefHat, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, ShoppingBasket, BookOpen, Settings as SettingsIcon, Menu, ChefHat, TrendingUp, ChevronRight, Plus, Package, Calculator, DollarSign, Utensils, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -69,7 +69,7 @@ function AppContent() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardSummary materials={materials} recipes={recipes} onOpenSimulator={() => setActiveTab('simulator')} />;
+        return <DashboardSummary materials={materials} recipes={recipes} onOpenSimulator={() => setActiveTab('simulator')} onNavigate={setActiveTab} />;
       case 'ingredients':
         return <IngredientList materials={materials} onAdd={() => setShowIngredientForm(true)} onDelete={deleteMaterial} onUpdate={updateMaterial} />;
       case 'simulator':
@@ -87,7 +87,7 @@ function AppContent() {
           </div>
         );
       default:
-        return <DashboardSummary materials={materials} recipes={recipes} />;
+        return <DashboardSummary materials={materials} recipes={recipes} onOpenSimulator={() => setActiveTab('simulator')} onNavigate={setActiveTab} />;
     }
   };  return (
     <div className="min-h-screen bg-creme font-sans text-gray-800">
@@ -136,26 +136,30 @@ function AppContent() {
         </main>
 
         {/* Navigation - Integrated vs Floating */}
-        <nav className="fixed bottom-0 md:bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-xl bg-white md:bg-white/90 md:backdrop-blur-xl border-t md:border border-gray-100 md:border-black/5 px-2 h-20 md:h-22 flex items-center justify-around z-50 md:rounded-3xl md:shadow-2xl">
+        <nav className="fixed bottom-0 md:bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-lg bg-white md:bg-white/90 md:backdrop-blur-xl border-t md:border border-gray-100 md:border-black/5 px-2 h-20 md:h-18 flex items-center justify-around z-50 md:rounded-3xl md:shadow-2xl">
           <button onClick={() => setActiveTab('dashboard')} className={cn('bottom-nav-item', activeTab === 'dashboard' && 'active')}>
-            <LayoutDashboard size={22} className="md:size-26" />
-            <span className="text-[9px] md:text-[11px] mt-1.5 font-bold uppercase tracking-tight">Início</span>
+            <LayoutDashboard size={22} className="md:size-20" />
+            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Início</span>
           </button>
           <button onClick={() => setActiveTab('ingredients')} className={cn('bottom-nav-item', activeTab === 'ingredients' && 'active')}>
-            <ShoppingBasket size={22} className="md:size-26" />
-            <span className="text-[9px] md:text-[11px] mt-1.5 font-bold uppercase tracking-tight">Ingredientes</span>
+            <Package size={22} className="md:size-20" />
+            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Insumos</span>
           </button>
           <button onClick={() => setActiveTab('simulator')} className={cn('bottom-nav-item', activeTab === 'simulator' && 'active')}>
-            <TrendingUp size={22} className="md:size-26" />
-            <span className="text-[9px] md:text-[11px] mt-1.5 font-bold uppercase tracking-tight text-center">Simulador</span>
+            <div className={cn(
+              "p-3 rounded-2xl transition-all duration-300",
+              activeTab === 'simulator' ? "bg-burgundy text-white shadow-lg scale-110" : "bg-creme text-burgundy"
+            )}>
+              <Calculator size={24} className="md:size-22" />
+            </div>
           </button>
           <button onClick={() => setActiveTab('recipes')} className={cn('bottom-nav-item', activeTab === 'recipes' && 'active')}>
-            <BookOpen size={22} className="md:size-26" />
-            <span className="text-[9px] md:text-[11px] mt-1.5 font-bold uppercase tracking-tight">Receitas</span>
+            <Utensils size={22} className="md:size-20" />
+            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Receitas</span>
           </button>
           <button onClick={() => setActiveTab('settings')} className={cn('bottom-nav-item', activeTab === 'settings' && 'active')}>
-            <SettingsIcon size={22} className="md:size-26" />
-            <span className="text-[9px] md:text-[11px] mt-1.5 font-bold uppercase tracking-tight">Ajustes</span>
+            <Settings size={22} className="md:size-20" />
+            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Ajustes</span>
           </button>
         </nav>
 

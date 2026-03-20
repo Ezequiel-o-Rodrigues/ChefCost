@@ -17,7 +17,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'chefcost-secret-key-change-in-prod
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use((req, res, next) => {
   if (req.url.endsWith('.js')) res.type('application/javascript');
@@ -316,6 +317,7 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
     }
     res.json(mapRecipe(result.rows[0], items || []));
   } catch (error) {
+    console.error('POST /api/recipes error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -324,6 +326,7 @@ app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes, photoUrl, instructions, items } = req.body;
+    console.log(`Updating recipe ${id}: ${name}. Photo items count: ${photoUrl?.length || 0}`);
     await client.query(
       'UPDATE recipes SET name=$1, yield=$2, profit_margin=$3, packaging_cost=$4, labor_cost=$5, energy_cost=$6, waste_factor=$7, prep_time_minutes=$8, photo_url=$9, instructions=$10 WHERE id=$11',
       [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes || 0, photoUrl || '', instructions || '', id]

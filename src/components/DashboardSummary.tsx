@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import React from 'react';
+import { ChevronRight, Plus, Package, Calculator, TrendingUp, DollarSign } from 'lucide-react';
 import { Material, Recipe } from '../types';
 import { calculateRecipeTotalCost } from '../utils/calculations';
 import { toMaterialsMap } from '../utils/materialUtils';
@@ -8,72 +8,106 @@ interface DashboardSummaryProps {
   materials: Material[];
   recipes: Recipe[];
   onOpenSimulator: () => void;
+  onNavigate: (tab: any) => void;
 }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, recipes, onOpenSimulator }) => {
+export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, recipes, onOpenSimulator, onNavigate }) => {
   const materialsMap = toMaterialsMap(materials);
 
   const totalProfit = recipes.reduce((acc, recipe) => {
     const { suggestedPrice, costPerUnit } = calculateRecipeTotalCost(recipe, materialsMap);
-    return acc + (suggestedPrice - costPerUnit) * recipe.yield;
+    return acc + (suggestedPrice - costPerUnit) * (recipe.yield || 1);
   }, 0);
 
-  return (
-    <div className="p-6 pt-20 space-y-6">
-      <header>
-        <h1 className="text-3xl font-display font-bold text-burgundy">ChefCost</h1>
-        <p className="text-gray-500">Gestão inteligente para sua cozinha.</p>
-      </header>
+  const totalInvestment = materials.reduce((acc, m) => acc + (m.pricePaid || 0), 0);
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card bg-white">
-          <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Receitas</p>
-          <p className="text-2xl font-display font-bold text-burgundy">{recipes.length}</p>
-        </div>
-        <div className="card bg-white">
-          <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Ingredientes</p>
-          <p className="text-2xl font-display font-bold text-burgundy">{materials.length}</p>
-        </div>
+  return (
+    <div className="space-y-8 pb-12">
+      <header className="px-2">
+        <h1 className="text-3xl font-display font-bold text-burgundy">ChefCost</h1>
+        <p className="text-gray-500 font-medium">Bem-vindo(a) à sua cozinha inteligente.</p>
+      </header>
+      
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 xs:grid-cols-3 gap-4 px-2">
+        <button 
+          onClick={() => onNavigate('recipes')}
+          className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95"
+        >
+          <div className="w-12 h-12 bg-pastel-pink/30 rounded-2xl flex items-center justify-center text-burgundy group-hover:scale-110 transition-transform mb-3">
+            <Plus size={24} />
+          </div>
+          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Nova Receita</span>
+        </button>
+        
+        <button 
+          onClick={() => onNavigate('ingredients')}
+          className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95"
+        >
+          <div className="w-12 h-12 bg-creme-dark/20 rounded-2xl flex items-center justify-center text-gray-700 group-hover:scale-110 transition-transform mb-3">
+            <Package size={24} />
+          </div>
+          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Novo Insumo</span>
+        </button>
+
+        <button 
+          onClick={onOpenSimulator}
+          className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95"
+        >
+          <div className="w-12 h-12 bg-burgundy/5 rounded-2xl flex items-center justify-center text-burgundy group-hover:scale-110 transition-transform mb-3">
+            <Calculator size={24} />
+          </div>
+          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Simular</span>
+        </button>
       </div>
 
-      {/* Card clicável — abre o simulador */}
+      {/* Main Stats Card */}
       <button
         onClick={onOpenSimulator}
-        className="w-full card bg-burgundy text-white text-left active:scale-[0.98] transition-transform"
+        className="w-full relative overflow-hidden card bg-burgundy text-white text-left active:scale-[0.99] transition-transform p-8 flex flex-col justify-between min-h-[160px] shadow-2xl"
       >
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-sm opacity-80">Lucro Potencial Total</p>
-            <p className="text-3xl font-display font-bold mt-1">R$ {fmt(totalProfit)}</p>
-            <p className="mt-2 text-xs opacity-60">Baseado no rendimento total de todas as receitas.</p>
-          </div>
-          <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 mt-1">
-            <span className="text-[10px] font-bold uppercase">Simular</span>
-            <ChevronRight size={12} />
+        <div className="absolute top-0 right-0 p-8 opacity-10">
+          <TrendingUp size={120} />
+        </div>
+        
+        <div className="relative z-10">
+          <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Lucro Potencial Estimado</p>
+          <p className="text-4xl font-display font-bold">R$ {fmt(totalProfit)}</p>
+          <p className="mt-4 text-xs opacity-50 max-w-[200px]">Cálculo baseado no rendimento total de suas {recipes.length} receitas cadastradas.</p>
+        </div>
+        
+        <div className="relative z-10 mt-auto flex justify-end">
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 border border-white/5">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Ver detalhes</span>
+            <ChevronRight size={14} />
           </div>
         </div>
       </button>
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-bold text-gray-400 uppercase">Resumo de Custos</h3>
-        <div className="space-y-2">
-          {recipes.slice(0, 3).map(recipe => {
-            const { costPerUnit, suggestedPrice } = calculateRecipeTotalCost(recipe, materialsMap);
-            return (
-              <div key={recipe.id} className="card bg-white flex justify-between items-center py-3">
-                <span className="text-sm font-medium">{recipe.name}</span>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400">Custo/Un</p>
-                  <p className="text-burgundy font-bold">R$ {fmt(costPerUnit)}</p>
-                </div>
-              </div>
-            );
-          })}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-2">
+        <div className="bg-creme rounded-3xl p-6 border border-burgundy/5 flex items-center gap-4">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-burgundy">
+            <DollarSign size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Investimento em Estoque</p>
+            <p className="text-xl font-bold text-gray-700">R$ {fmt(totalInvestment)}</p>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-3xl p-6 border border-gray-100 flex items-center gap-4 shadow-sm">
+          <div className="w-12 h-12 bg-pastel-pink/10 rounded-2xl flex items-center justify-center text-burgundy">
+            <TrendingUp size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Margem Média</p>
+            <p className="text-xl font-bold text-gray-700">100% <span className="text-[10px] text-green-500 font-bold ml-1">Normal</span></p>
+          </div>
         </div>
       </div>
-
     </div>
   );
 };
