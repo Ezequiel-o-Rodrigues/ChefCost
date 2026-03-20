@@ -262,6 +262,59 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
               </div>
             </div>
 
+            {/* Secao: Detalhes Adicionais (Mais discreta) */}
+            <div className="border-t border-gray-50 pt-6 space-y-4">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Detalhes Adicionais</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Upload de Foto */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 flex items-center gap-2 cursor-pointer hover:text-burgundy transition-colors">
+                    <div className="w-8 h-8 bg-creme rounded-lg flex items-center justify-center">
+                      <ImageIcon size={16} />
+                    </div>
+                    <span>{photoUrl ? 'Trocar Foto' : 'Adicionar Foto'}</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleFileChange} 
+                      className="hidden" 
+                    />
+                  </label>
+                  
+                  {photoUrl && (
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden group border border-gray-100">
+                      <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button 
+                        type="button"
+                        onClick={() => setPhotoUrl('')}
+                        className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-md rounded-lg text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modo de Preparo */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
+                    <div className="w-8 h-8 bg-creme rounded-lg flex items-center justify-center">
+                      <FileText size={16} />
+                    </div>
+                    <span>Modo de Preparo</span>
+                  </div>
+                  <textarea
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    rows={photoUrl ? 3 : 2}
+                    className="w-full bg-creme border-none rounded-xl p-3 focus:ring-1 focus:ring-pastel-pink text-xs custom-scrollbar resize-none"
+                    placeholder="Dicas de preparo..."
+                  />
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <div className="pt-4 pb-2 flex-shrink-0">
