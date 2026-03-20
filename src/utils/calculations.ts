@@ -34,8 +34,7 @@ export const calculateItemCost = (item: RecipeItem, material: Material): number 
  */
 export const calculateRecipeTotalCost = (
   recipe: Recipe,
-  materials: Record<string, Material>,
-  prepTimeHours: number = 0
+  materials: Record<string, Material>
 ): {
   ingredientsCost: number;
   totalCost: number;
@@ -59,6 +58,7 @@ export const calculateRecipeTotalCost = (
   const yieldQty = recipe.yield || 1;
 
   const costWithWaste = ingredientsCost * (1 + wasteFactor);
+  const prepTimeHours = (recipe.prepTimeMinutes || 0) / 60;
   const laborTotal = prepTimeHours * laborCost;
   const energyTotal = prepTimeHours * energyCost;
   

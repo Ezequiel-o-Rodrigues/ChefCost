@@ -33,16 +33,16 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
 
         <section className="space-y-6">
           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Passo a Passo (Fácil e rápido)</h3>
-          
+
           <div className="space-y-8">
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 bg-pastel-pink rounded-full flex items-center justify-center text-burgundy font-bold">1</div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 font-bold text-burgundy">
                   <ShoppingBasket size={18} />
-                  <h4>Passo 1: Cadastre seus Ingredientes ("Insumos")</h4>
+                  <h4>Passo 1: Cadastre seus Ingredientes</h4>
                 </div>
-                <p className="text-sm text-gray-500">Vá na aba "Insumos" para adicionar tudo o que você compra no supermercado (como leite, farinha, embalagens). Diga qual foi o valor que você pagou no pacote fechado, e o aplicativo fará as contas dividindo para achar o preço de cada grama sozinho!</p>
+                <p className="text-sm text-gray-500">Vá na aba "Ingredientes" para adicionar tudo o que você compra no supermercado (como leite, farinha, embalagens). Diga qual foi o valor que você pagou no pacote fechado, e o aplicativo fará as contas dividindo para achar o preço de cada grama sozinho!</p>
               </div>
             </div>
 
@@ -84,7 +84,7 @@ export const Documentation: React.FC<DocumentationProps> = ({ onBack }) => {
 
         <footer className="text-center py-6 border-t border-gray-100">
           <p className="text-xs text-gray-400">Dúvidas? Entre em contato com o desenvolvedor.</p>
-          <p className="text-sm font-bold text-burgundy mt-1">ezequeilerod2020@gmail.com</p>
+          <p className="text-sm font-bold text-burgundy mt-1">ezequielrod2020@gmail.com</p>
         </footer>
       </div>
     </div>

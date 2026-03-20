@@ -30,6 +30,7 @@ export interface Recipe {
   laborCost: number;
   energyCost: number;
   wasteFactor: number; // e.g., 0.1 for 10%
+  prepTimeMinutes?: number;
   items: RecipeItem[];
   userId: string;
   createdAt: number;

@@ -34,7 +34,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, r
           <p className="text-2xl font-display font-bold text-burgundy">{recipes.length}</p>
         </div>
         <div className="card bg-white">
-          <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Insumos</p>
+          <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Ingredientes</p>
           <p className="text-2xl font-display font-bold text-burgundy">{materials.length}</p>
         </div>
       </div>

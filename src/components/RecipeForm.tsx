@@ -5,23 +5,25 @@
 
 import React, { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { Recipe, RecipeItem, Material, Unit } from '../types';
+import { Recipe, RecipeItem, Material, Unit, AppSettings } from '../types';
 
 interface RecipeFormProps {
   materials: Material[];
+  settings: AppSettings;
   onSave: (recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) => void;
   onClose: () => void;
   initialData?: Recipe;
 }
 
-export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, onSave, onClose, initialData }) => {
+export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onSave, onClose, initialData }) => {
   const [name, setName] = useState(initialData?.name || '');
   const [yieldQty, setYieldQty] = useState(initialData?.yield || 1);
   const [profitMargin, setProfitMargin] = useState(initialData?.profitMargin || 100);
   const [packagingCost, setPackagingCost] = useState(initialData?.packagingCost || 0);
-  const [laborCost, setLaborCost] = useState(initialData?.laborCost || 25);
-  const [energyCost, setEnergyCost] = useState(initialData?.energyCost || 5);
+  const [laborCost, setLaborCost] = useState(initialData?.laborCost || settings.hourlyRate);
+  const [energyCost, setEnergyCost] = useState(initialData?.energyCost || settings.energyRate);
   const [wasteFactor, setWasteFactor] = useState(initialData?.wasteFactor || 0.1);
+  const [prepTimeMinutes, setPrepTimeMinutes] = useState(initialData?.prepTimeMinutes || 0);
   const [items, setItems] = useState<RecipeItem[]>(initialData?.items || []);
 
   const addItem = () => {
@@ -50,6 +52,7 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, onSave, onClo
       laborCost,
       energyCost,
       wasteFactor,
+      prepTimeMinutes,
       items
     });
     onClose();
@@ -98,6 +101,18 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, onSave, onClo
                   value={profitMargin}
                   onChange={(e) => setProfitMargin(Number(e.target.value))}
                   className="w-full bg-creme border-none rounded-xl p-3"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Tempo de Preparo (min)</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  value={prepTimeMinutes}
+                  onChange={(e) => setPrepTimeMinutes(Number(e.target.value))}
+                  className="w-full bg-creme border-none rounded-xl p-3"
+                  placeholder="Ex: 60"
                 />
               </div>
             </div>

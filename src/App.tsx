@@ -72,7 +72,7 @@ function AppContent() {
       case 'ingredients':
         return <IngredientList materials={materials} onAdd={() => setShowIngredientForm(true)} onDelete={deleteMaterial} onUpdate={updateMaterial} />;
       case 'recipes':
-        return <RecipeList recipes={recipes} materials={materials} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} onUpdate={updateRecipe} />;
+        return <RecipeList recipes={recipes} materials={materials} settings={settings} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} onUpdate={updateRecipe} />;
       case 'settings':
         return (
           <div className="p-6 pt-20 space-y-6">
@@ -127,7 +127,7 @@ function AppContent() {
         <IngredientForm onSave={addMaterial} onClose={() => setShowIngredientForm(false)} />
       )}
       {showRecipeForm && (
-        <RecipeForm materials={materials} onSave={addRecipe} onClose={() => setShowRecipeForm(false)} />
+        <RecipeForm materials={materials} settings={settings} onSave={addRecipe} onClose={() => setShowRecipeForm(false)} />
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-black/5 flex justify-around items-center h-20 px-4 z-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
@@ -137,7 +137,7 @@ function AppContent() {
         </button>
         <button onClick={() => setActiveTab('ingredients')} className={cn('bottom-nav-item', activeTab === 'ingredients' && 'active')}>
           <ShoppingBasket size={24} />
-          <span className="text-[10px] mt-1 font-bold uppercase">Insumos</span>
+          <span className="text-[10px] mt-1 font-bold uppercase">Ingredientes</span>
         </button>
         <button onClick={() => setActiveTab('recipes')} className={cn('bottom-nav-item', activeTab === 'recipes' && 'active')}>
           <BookOpen size={24} />

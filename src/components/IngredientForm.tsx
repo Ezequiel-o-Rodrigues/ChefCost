@@ -29,7 +29,7 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ onSave, onClose,
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
       <div className="bg-white w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Insumo' : 'Novo Insumo'}</h2>
+          <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Ingrediente' : 'Novo Ingrediente'}</h2>
           <button onClick={onClose} className="text-gray-400 p-1">
             <X size={24} />
           </button>
@@ -37,7 +37,7 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ onSave, onClose,
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-400 uppercase">Nome do Insumo</label>
+            <label className="text-xs font-bold text-gray-400 uppercase">Nome do Ingrediente</label>
             <input
               required
               type="text"
@@ -91,7 +91,7 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ onSave, onClose,
 
           <div className="pt-4">
             <button type="submit" className="w-full btn-primary">
-              {initialData ? 'Atualizar Insumo' : 'Salvar Insumo'}
+              {initialData ? 'Atualizar Ingrediente' : 'Salvar Ingrediente'}
             </button>
           </div>
         </form>
