@@ -44,20 +44,31 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, sett
             return (
               <div key={recipe.id} className="card bg-white space-y-4 group relative">
                 {/* Ações */}
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-4 right-4 flex gap-3 transition-opacity">
                   <button
                     onClick={() => setEditing(recipe)}
-                    className="text-gray-300 hover:text-burgundy"
+                    className="text-gray-400 hover:text-burgundy p-1 bg-creme-dark/50 rounded-lg hover:bg-pastel-pink/20 transition-colors"
                   >
-                    <Pencil size={16} />
+                    <Pencil size={18} />
                   </button>
                   <button
                     onClick={() => onDelete(recipe.id!)}
-                    className="text-red-300 hover:text-red-500"
+                    className="text-red-300 hover:text-red-500 p-1 bg-creme-dark/50 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={20} />
                   </button>
                 </div>
+                
+                {recipe.photoUrl && (
+                  <div className="h-40 -mx-4 -mt-4 mb-4 overflow-hidden rounded-t-2xl border-b border-gray-100">
+                    <img 
+                      src={recipe.photoUrl} 
+                      alt={recipe.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <h3 className="font-bold text-lg text-burgundy">{recipe.name}</h3>
@@ -74,6 +85,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, sett
                       </span>
                     ) : null}
                   </div>
+                  {recipe.instructions && (
+                    <p className="text-xs text-gray-500 line-clamp-2 italic pt-1">{recipe.instructions}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-50">

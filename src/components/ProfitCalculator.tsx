@@ -96,8 +96,8 @@ export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, mat
               </div>
             </div>
 
-            {/* Investimento */}
-            <div className="bg-orange-50 rounded-2xl p-5 space-y-3">
+            {/* Card de Investimento - Melhorado para não 'flutuar' */}
+            <div className="bg-white rounded-3xl p-6 shadow-xl border-2 border-orange-100 space-y-4 ring-4 ring-orange-50/20">
               <div className="flex items-center justify-center gap-3">
                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <ShoppingCart size={18} className="text-orange-500" />

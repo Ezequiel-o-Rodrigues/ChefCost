@@ -4,19 +4,21 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { X, Trash2, Search, Check } from 'lucide-react';
+import { X, Trash2, Search, Check, Plus, Image as ImageIcon, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Recipe, RecipeItem, Material, Unit, AppSettings } from '../types';
+import { IngredientForm } from './IngredientForm';
 
 interface RecipeFormProps {
   materials: Material[];
   settings: AppSettings;
   onSave: (recipe: Omit<Recipe, 'id' | 'userId' | 'createdAt'>) => void;
+  onAddMaterial: (material: Omit<Material, 'id' | 'userId'>) => Promise<void>;
   onClose: () => void;
   initialData?: Recipe;
 }
 
-export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onSave, onClose, initialData }) => {
+export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onSave, onAddMaterial, onClose, initialData }) => {
   const [name, setName] = useState(initialData?.name || '');
   const [yieldQty, setYieldQty] = useState(initialData?.yield || 1);
   const [profitMargin, setProfitMargin] = useState(initialData?.profitMargin || 100);
@@ -25,8 +27,11 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
   const [energyCost, setEnergyCost] = useState(initialData?.energyCost || settings.energyRate);
   const [wasteFactor, setWasteFactor] = useState(initialData?.wasteFactor || 0.1);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(initialData?.prepTimeMinutes || 0);
+  const [photoUrl, setPhotoUrl] = useState(initialData?.photoUrl || '');
+  const [instructions, setInstructions] = useState(initialData?.instructions || '');
   const [items, setItems] = useState<RecipeItem[]>(initialData?.items || []);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewIngredientForm, setShowNewIngredientForm] = useState(false);
 
   const filteredMaterials = useMemo(() => {
     return materials.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -58,6 +63,8 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
       energyCost,
       wasteFactor,
       prepTimeMinutes,
+      photoUrl,
+      instructions,
       items
     });
     onClose();
@@ -126,6 +133,32 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
                 />
               </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                <ImageIcon size={12} /> URL da Foto
+              </label>
+              <input
+                type="url"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink text-sm"
+                placeholder="https://exemplo.com/foto-do-bolo.jpg"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                <FileText size={12} /> Modo de Preparo
+              </label>
+              <textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                rows={4}
+                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink text-sm custom-scrollbar"
+                placeholder="Descreva o passo a passo da sua receita..."
+              />
+            </div>
           </div>
 
           <div className="border-t border-gray-100 pt-6 space-y-6">
@@ -134,6 +167,13 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-bold text-gray-400 uppercase">Sua Despensa</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowNewIngredientForm(true)}
+                  className="flex items-center gap-1 text-[10px] font-bold uppercase text-burgundy bg-pastel-pink/30 px-2 py-1 rounded-lg hover:bg-pastel-pink/50 transition-colors"
+                >
+                  <Plus size={12} /> Novo Ingrediente
+                </button>
               </div>
               
               <div className="relative">
@@ -245,6 +285,18 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
             </button>
           </div>
         </form>
+
+        <AnimatePresence>
+          {showNewIngredientForm && (
+            <IngredientForm 
+              onSave={async (data) => {
+                await onAddMaterial(data);
+                setShowNewIngredientForm(false);
+              }} 
+              onClose={() => setShowNewIngredientForm(false)} 
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
