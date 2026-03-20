@@ -52,6 +52,17 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
     setItems(newItems);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
@@ -132,32 +143,6 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
                   placeholder="Ex: 60"
                 />
               </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-                <ImageIcon size={12} /> URL da Foto
-              </label>
-              <input
-                type="url"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink text-sm"
-                placeholder="https://exemplo.com/foto-do-bolo.jpg"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-                <FileText size={12} /> Modo de Preparo
-              </label>
-              <textarea
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                rows={4}
-                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink text-sm custom-scrollbar"
-                placeholder="Descreva o passo a passo da sua receita..."
-              />
             </div>
           </div>
 
