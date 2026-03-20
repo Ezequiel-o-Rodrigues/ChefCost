@@ -1,18 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { X, TrendingUp, ShoppingCart, DollarSign, Package } from 'lucide-react';
 import { Recipe, Material } from '../types';
-import { calculateRecipeTotalCost } from '../utils/calculations';
+import { calculateRecipeTotalCost, convertToMinUnit } from '../utils/calculations';
 import { toMaterialsMap } from '../utils/materialUtils';
 
 interface ProfitCalculatorProps {
   recipes: Recipe[];
   materials: Material[];
-  onClose: () => void;
 }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, materials, onClose }) => {
+export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, materials }) => {
   const [selectedRecipeId, setSelectedRecipeId] = useState(recipes[0]?.id ?? '');
   const [units, setUnits] = useState(10);
 
@@ -31,19 +30,11 @@ export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, mat
   }, [recipe, materialsMap, units]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-sm rounded-3xl p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-
-        {/* Header */}
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex-1">
-            <h2 className="text-2xl font-display font-bold text-burgundy">Simulador de Lucro</h2>
-            <p className="text-xs text-gray-400 mt-1">Simule suas vendas e veja o retorno</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 p-1 hover:text-gray-600 flex-shrink-0">
-            <X size={24} />
-          </button>
-        </div>
+    <div className="p-6 pt-20 space-y-6 pb-24">
+      <header>
+        <h1 className="text-2xl font-display font-bold text-burgundy">Simulador de Lucro</h1>
+        <p className="text-gray-500 text-sm">Simule suas vendas e veja o retorno exato</p>
+      </header>
 
         {/* Inputs */}
         <div className="space-y-5">
@@ -116,6 +107,25 @@ export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, mat
                   <p className="text-sm text-orange-300">{units} un × R$ {fmt(result.costPerUnit)}</p>
                 </div>
               </div>
+
+              <div className="border-t border-orange-200/50 pt-3 mt-3">
+                <p className="text-[10px] text-orange-400 font-bold uppercase mb-2 text-center">Ingredientes Necessários:</p>
+                <div className="space-y-1 bg-white/40 p-3 rounded-xl">
+                  {recipe.items.map((item, idx) => {
+                    const material = materialsMap[item.materialId];
+                    if (!material) return null;
+                    const qtyInMinUnit = convertToMinUnit(item.qty, item.unit) * units;
+                    const cost = qtyInMinUnit * material.pricePerMinUnit;
+                    return (
+                      <div key={idx} className="flex justify-between text-xs text-orange-800/80 items-center">
+                        <span>{item.qty * units}{item.unit} de {material.name}</span>
+                        <span className="font-bold">R$ {fmt(cost)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <p className="text-2xl font-display font-bold text-orange-500 text-center">R$ {fmt(result.totalCost)}</p>
             </div>
 
@@ -154,7 +164,6 @@ export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, mat
             <p className="text-sm">Cadastre receitas para usar o simulador.</p>
           </div>
         )}
-      </div>
     </div>
   );
 };

@@ -43,8 +43,14 @@ const initDB = async () => {
   // Migracoes na tabela users existente (id ja e TEXT no Neon)
   await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'`);
   await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT false`);
-  await client.query(`UPDATE users SET role = 'user' WHERE role IS NULL`);
   await client.query(`UPDATE users SET is_active = false WHERE is_active IS NULL`);
+
+  // Adiciona a nova coluna de prep_time_minutes se nao existir
+  try {
+    await client.query(`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS prep_time_minutes REAL DEFAULT 0`);
+  } catch (err) {
+    if (err.code !== '42701') console.error('Migration error:', err);
+  }
 
   // Garante admin
   const adminEmail = 'ezequielrod2020@gmail.com';
@@ -126,6 +132,7 @@ const mapRecipe = (r, items = []) => ({
   laborCost: Number(r.labor_cost ?? 0),
   energyCost: Number(r.energy_cost ?? 0),
   wasteFactor: Number(r.waste_factor ?? 0),
+  prepTimeMinutes: Number(r.prep_time_minutes ?? 0),
   userId: String(r.user_id),
   createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
   items: items.map(i => ({ materialId: String(i.material_id), qty: Number(i.qty), unit: i.unit })),
@@ -273,7 +280,7 @@ app.delete('/api/materials/:id', authenticateToken, async (req, res) => {
 app.get('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const result = await client.query(
-      'SELECT id, name, yield AS recipe_yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id, created_at FROM recipes WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT id, name, yield AS recipe_yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, prep_time_minutes, user_id, created_at FROM recipes WHERE user_id = $1 ORDER BY created_at DESC',
       [req.userId]
     );
     const recipes = [];
@@ -289,11 +296,11 @@ app.get('/api/recipes', authenticateToken, async (req, res) => {
 
 app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
-    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
+    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes, items } = req.body;
     const recipeId = randomUUID();
     const result = await client.query(
-      'INSERT INTO recipes (id, name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
-      [recipeId, name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, req.userId]
+      'INSERT INTO recipes (id, name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, prep_time_minutes, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *',
+      [recipeId, name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes || 0, req.userId]
     );
     if (items?.length > 0) {
       for (const item of items) {
@@ -312,10 +319,10 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
 app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, items } = req.body;
+    const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes, items } = req.body;
     await client.query(
-      'UPDATE recipes SET name=$1, yield=$2, profit_margin=$3, packaging_cost=$4, labor_cost=$5, energy_cost=$6, waste_factor=$7 WHERE id=$8',
-      [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, id]
+      'UPDATE recipes SET name=$1, yield=$2, profit_margin=$3, packaging_cost=$4, labor_cost=$5, energy_cost=$6, waste_factor=$7, prep_time_minutes=$8 WHERE id=$9',
+      [name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes || 0, id]
     );
     await client.query('DELETE FROM recipe_items WHERE recipe_id = $1', [id]);
     if (items?.length > 0) {

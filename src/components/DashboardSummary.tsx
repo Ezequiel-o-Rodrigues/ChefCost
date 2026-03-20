@@ -3,17 +3,16 @@ import { ChevronRight } from 'lucide-react';
 import { Material, Recipe } from '../types';
 import { calculateRecipeTotalCost } from '../utils/calculations';
 import { toMaterialsMap } from '../utils/materialUtils';
-import { ProfitCalculator } from './ProfitCalculator';
 
 interface DashboardSummaryProps {
   materials: Material[];
   recipes: Recipe[];
+  onOpenSimulator: () => void;
 }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, recipes }) => {
-  const [showCalculator, setShowCalculator] = useState(false);
+export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, recipes, onOpenSimulator }) => {
   const materialsMap = toMaterialsMap(materials);
 
   const totalProfit = recipes.reduce((acc, recipe) => {
@@ -41,7 +40,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, r
 
       {/* Card clicável — abre o simulador */}
       <button
-        onClick={() => setShowCalculator(true)}
+        onClick={onOpenSimulator}
         className="w-full card bg-burgundy text-white text-left active:scale-[0.98] transition-transform"
       >
         <div className="flex justify-between items-start">
@@ -75,13 +74,6 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, r
         </div>
       </div>
 
-      {showCalculator && (
-        <ProfitCalculator
-          recipes={recipes}
-          materials={materials}
-          onClose={() => setShowCalculator(false)}
-        />
-      )}
     </div>
   );
 };

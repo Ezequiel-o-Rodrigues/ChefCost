@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { LayoutDashboard, ShoppingBasket, BookOpen, Settings as SettingsIcon, Menu, ChefHat } from 'lucide-react';
+import { LayoutDashboard, ShoppingBasket, BookOpen, Settings as SettingsIcon, Menu, ChefHat, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -16,6 +16,7 @@ import { SettingsForm } from './components/SettingsForm';
 import { ConversionForm } from './components/ConversionForm';
 import { IngredientForm } from './components/IngredientForm';
 import { RecipeForm } from './components/RecipeForm';
+import { ProfitCalculator } from './components/ProfitCalculator';
 import { SimpleAuth } from './components/SimpleAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/Sidebar';
@@ -39,7 +40,7 @@ function AppContent() {
     updateSettings,
   } = useAPI(userEmail);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'ingredients' | 'recipes' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'ingredients' | 'recipes' | 'simulator' | 'settings'>('dashboard');
   const [showIngredientForm, setShowIngredientForm] = useState(false);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -68,9 +69,11 @@ function AppContent() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardSummary materials={materials} recipes={recipes} />;
+        return <DashboardSummary materials={materials} recipes={recipes} onOpenSimulator={() => setActiveTab('simulator')} />;
       case 'ingredients':
         return <IngredientList materials={materials} onAdd={() => setShowIngredientForm(true)} onDelete={deleteMaterial} onUpdate={updateMaterial} />;
+      case 'simulator':
+        return <ProfitCalculator recipes={recipes} materials={materials} />;
       case 'recipes':
         return <RecipeList recipes={recipes} materials={materials} settings={settings} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} onUpdate={updateRecipe} />;
       case 'settings':
@@ -138,6 +141,10 @@ function AppContent() {
         <button onClick={() => setActiveTab('ingredients')} className={cn('bottom-nav-item', activeTab === 'ingredients' && 'active')}>
           <ShoppingBasket size={24} />
           <span className="text-[10px] mt-1 font-bold uppercase">Ingredientes</span>
+        </button>
+        <button onClick={() => setActiveTab('simulator')} className={cn('bottom-nav-item', activeTab === 'simulator' && 'active')}>
+          <TrendingUp size={24} />
+          <span className="text-[10px] mt-1 font-bold uppercase">Simulador</span>
         </button>
         <button onClick={() => setActiveTab('recipes')} className={cn('bottom-nav-item', activeTab === 'recipes' && 'active')}>
           <BookOpen size={24} />
