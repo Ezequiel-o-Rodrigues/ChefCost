@@ -55,7 +55,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, sett
               return (
                 <div key={recipe.id} className="card bg-white space-y-4 group relative flex flex-col h-full border border-gray-100 hover:shadow-xl transition-all duration-300">
                   {/* Ações */}
-                  <div className="absolute top-4 right-4 flex gap-3 transition-opacity">
+                  <div className="absolute top-4 right-4 flex gap-3 transition-opacity z-20">
                     <button
                       onClick={() => setEditing(recipe)}
                       className="text-gray-400 hover:text-burgundy p-1 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-pastel-pink/20 transition-colors shadow-sm"
