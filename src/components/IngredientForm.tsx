@@ -26,8 +26,8 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ onSave, onClose,
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-      <div className="bg-white w-full max-w-sm rounded-3xl p-6 space-y-6 shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-[100] backdrop-blur-sm">
+      <div className="bg-white w-full max-w-sm rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Ingrediente' : 'Novo Ingrediente'}</h2>
           <button onClick={onClose} className="text-gray-400 p-1">
@@ -69,9 +69,12 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ onSave, onClose,
                 required
                 type="number"
                 step="0.01"
-                value={packageQty}
-                onChange={(e) => setPackageQty(Number(e.target.value))}
-                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink"
+                value={packageQty === 0 ? '' : packageQty}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPackageQty(val === '' ? 0 : Number(val));
+                }}
+                className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink font-medium"
               />
             </div>
           </div>
@@ -82,9 +85,12 @@ export const IngredientForm: React.FC<IngredientFormProps> = ({ onSave, onClose,
               required
               type="number"
               step="0.01"
-              value={pricePaid}
-              onChange={(e) => setPricePaid(Number(e.target.value))}
-              className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink"
+              value={pricePaid === 0 ? '' : pricePaid}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPricePaid(val === '' ? 0 : Number(val));
+              }}
+              className="w-full bg-creme border-none rounded-xl p-3 focus:ring-2 focus:ring-pastel-pink font-medium"
               placeholder="0,00"
             />
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Plus, Package, Calculator, TrendingUp, DollarSign } from 'lucide-react';
+import { ChevronRight, Plus, Package, Calculator, TrendingUp, DollarSign, ChefHat } from 'lucide-react';
 import { Material, Recipe } from '../types';
 import { calculateRecipeTotalCost } from '../utils/calculations';
 import { toMaterialsMap } from '../utils/materialUtils';
@@ -25,41 +25,43 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ materials, r
 
   return (
     <div className="space-y-8 pb-12">
-      <header className="px-2">
-        <h1 className="text-3xl font-display font-bold text-burgundy">ChefCost</h1>
-        <p className="text-gray-500 font-medium">Bem-vindo(a) à sua cozinha inteligente.</p>
+      <header className="px-2 flex items-center gap-4">
+        <div className="w-14 h-14 bg-pastel-pink rounded-3xl flex items-center justify-center shadow-lg transform -rotate-3">
+          <ChefHat size={32} className="text-burgundy" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-display font-bold text-burgundy leading-none">Olá, Chef!</h1>
+          <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-widest font-bold opacity-60">Sua Cozinha Inteligente</p>
+        </div>
       </header>
       
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 xs:grid-cols-3 gap-4 px-2">
-        <button 
-          onClick={() => onNavigate('recipes')}
-          className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95"
-        >
-          <div className="w-12 h-12 bg-pastel-pink/30 rounded-2xl flex items-center justify-center text-burgundy group-hover:scale-110 transition-transform mb-3">
-            <Plus size={24} />
-          </div>
-          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Nova Receita</span>
-        </button>
-        
+      {/* New Professional Dashboard Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 px-2">
         <button 
           onClick={() => onNavigate('ingredients')}
-          className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95"
+          className="col-span-2 sm:col-span-1 flex flex-col items-start p-5 bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95 text-left"
         >
-          <div className="w-12 h-12 bg-creme-dark/20 rounded-2xl flex items-center justify-center text-gray-700 group-hover:scale-110 transition-transform mb-3">
-            <Package size={24} />
+          <div className="w-10 h-10 bg-creme rounded-2xl flex items-center justify-center text-gray-700 group-hover:scale-110 transition-transform mb-3">
+            <Package size={20} />
           </div>
-          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Novo Insumo</span>
+          <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Minha Despensa</p>
+          <p className="text-lg font-bold text-burgundy">
+            {materials.length} <span className="text-sm font-medium text-gray-500">insumos</span>
+          </p>
         </button>
 
         <button 
-          onClick={onOpenSimulator}
-          className="flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95"
+          onClick={() => onNavigate('recipes')}
+          className="col-span-2 sm:col-span-1 flex flex-col items-start p-5 bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group active:scale-95 text-left"
         >
-          <div className="w-12 h-12 bg-burgundy/5 rounded-2xl flex items-center justify-center text-burgundy group-hover:scale-110 transition-transform mb-3">
-            <Calculator size={24} />
+          <div className="w-10 h-10 bg-pastel-pink/20 rounded-2xl flex items-center justify-center text-burgundy group-hover:scale-110 transition-transform mb-3">
+            <Plus size={20} />
           </div>
-          <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Simular</span>
+          <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-1">Minhas Receitas</p>
+          <p className="text-lg font-bold text-burgundy">
+            {recipes.length} <span className="text-sm font-medium text-gray-500">cadastradas</span>
+          </p>
         </button>
       </div>
 

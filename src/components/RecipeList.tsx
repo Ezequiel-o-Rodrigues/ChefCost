@@ -43,6 +43,15 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, sett
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recipes.map((recipe) => {
               const { costPerUnit, suggestedPrice } = calculateRecipeTotalCost(recipe, materialsMap);
+              
+              const getStatusBadge = () => {
+                if (recipe.profitMargin >= 150) return { label: 'Alta Margem', color: 'bg-green-100 text-green-700' };
+                if (recipe.profitMargin >= 80) return { label: 'Lucro OK', color: 'bg-blue-100 text-blue-700' };
+                return { label: 'Revisar Margem', color: 'bg-amber-100 text-amber-700' };
+              };
+              
+              const badge = getStatusBadge();
+
               return (
                 <div key={recipe.id} className="card bg-white space-y-4 group relative flex flex-col h-full border border-gray-100 hover:shadow-xl transition-all duration-300">
                   {/* Ações */}
@@ -74,7 +83,12 @@ export const RecipeList: React.FC<RecipeListProps> = ({ recipes, materials, sett
                   )}
 
                   <div className="space-y-1 flex-1">
-                    <h3 className="font-bold text-lg text-burgundy">{recipe.name}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-lg text-burgundy">{recipe.name}</h3>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tight ${badge.color}`}>
+                        {badge.label}
+                      </span>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       <span className="bg-creme text-burgundy text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">
                         Rendimento: {recipe.yield} un

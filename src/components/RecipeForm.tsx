@@ -82,8 +82,8 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-3xl p-6 space-y-6 shadow-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-[100] backdrop-blur-sm">
+      <div className="bg-white w-full max-w-lg rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl max-h-[95vh] flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center flex-shrink-0">
           <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Receita' : 'Nova Receita'}</h2>
@@ -108,38 +108,50 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Rendimento (Un)</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Rendimento</label>
                 <input
                   required
                   type="number"
                   min="1"
-                  value={yieldQty}
-                  onChange={(e) => setYieldQty(Math.max(1, Number(e.target.value)))}
-                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium"
+                  value={yieldQty === 0 ? '' : yieldQty}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') setYieldQty(0);
+                    else setYieldQty(Math.max(1, Number(val)));
+                  }}
+                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium text-sm sm:text-base"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Margem Lucro (%)</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Margem (%)</label>
                 <input
                   required
                   type="number"
                   min="0"
-                  value={profitMargin}
-                  onChange={(e) => setProfitMargin(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium"
+                  value={profitMargin === 0 ? '' : profitMargin}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') setProfitMargin(0);
+                    else setProfitMargin(Math.max(0, Number(val)));
+                  }}
+                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium text-sm sm:text-base"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Tempo (min)</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Tempo (min)</label>
                 <input
                   required
                   type="number"
                   min="0"
-                  value={prepTimeMinutes}
-                  onChange={(e) => setPrepTimeMinutes(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium"
+                  value={prepTimeMinutes === 0 ? '' : prepTimeMinutes}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') setPrepTimeMinutes(0);
+                    else setPrepTimeMinutes(Math.max(0, Number(val)));
+                  }}
+                  className="w-full bg-creme border-none rounded-xl p-3 text-burgundy font-medium text-sm sm:text-base"
                   placeholder="Ex: 60"
                 />
               </div>
@@ -229,8 +241,11 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
                             step="0.01"
                             min="0"
                             value={item.qty === 0 ? '' : item.qty}
-                            onChange={(e) => updateItem(index, 'qty', Number(e.target.value))}
-                            className="w-16 bg-creme border-none rounded-lg p-2 text-sm text-center focus:ring-2 focus:ring-pastel-pink"
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateItem(index, 'qty', val === '' ? 0 : Number(val));
+                            }}
+                            className="w-16 bg-creme border-none rounded-lg p-2 text-sm text-center focus:ring-2 focus:ring-pastel-pink font-medium"
                             placeholder="Qtd"
                           />
                           <select
