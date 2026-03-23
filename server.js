@@ -410,6 +410,40 @@ app.post('/api/settings', authenticateToken, async (req, res) => {
   }
 });
 
+// === ASSISTANT PROXY ===
+app.post('/api/assistant', authenticateToken, async (req, res) => {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) return res.status(503).json({ message: 'Assistente não configurado no servidor.' });
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...req.body, userEmail: req.body.userEmail }),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao conectar com o assistente.' });
+  }
+});
+
+app.post('/api/assistant/file', authenticateToken, async (req, res) => {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) return res.status(503).json({ message: 'Assistente não configurado no servidor.' });
+  // Repassa o body como JSON com metadata do arquivo
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao conectar com o assistente.' });
+  }
+});
+
 // === FRONTEND ===
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
