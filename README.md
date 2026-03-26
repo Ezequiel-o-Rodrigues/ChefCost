@@ -1,85 +1,267 @@
-Este projeto, o ChefCost, é um ecossistema inteligente de gestão de custos para gastronomia. Ele não é apenas um site com banco de dados; é uma aplicação "AI-First" onde a interface principal de entrada é um chat capaz de entender texto, voz e imagens.
+<div align="center">
 
-Aqui está a explicação detalhada de como tudo funciona, desde o código no seu repositório GitHub até a automação complexa no n8n.
+# 🍳 ChefCost
 
-1. A Arquitetura Geral
+### Sistema Inteligente de Precificação para Profissionais da Gastronomia
 
-O projeto é dividido em três camadas:
+*Calcule custos, simule lucros e gerencie receitas com precisão — powered by IA*
 
-Frontend (Next.js/React): Onde o Chef interage. Ele captura o áudio do microfone, fotos de notas fiscais ou mensagens de texto.
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)](https://neon.tech/)
+[![Google AI](https://img.shields.io/badge/Google_AI-Gemini-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
+[![n8n](https://img.shields.io/badge/n8n-Automation-EA4B71?logo=n8n&logoColor=white)](https://n8n.io/)
 
-Orquestrador (n8n): O "cérebro" fora do servidor. Ele recebe os dados brutos, decide o que fazer, consulta a IA e manipula o banco de dados.
+</div>
 
-Banco de Dados (PostgreSQL/Neon): Onde as receitas e insumos são armazenados de forma estruturada para o site exibir em tabelas e dashboards.
+---
 
-2. O Fluxo de Dados (No n8n)
+## 📸 Screenshots
 
-Seu fluxo no n8n é um dos mais completos para esse tipo de aplicação. Vamos seguir o caminho de uma mensagem:
+<div align="center">
 
-A. Entrada Multimodal (O início de tudo)
+<!-- Adicione suas screenshots aqui -->
+<!-- <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="800"/> -->
+<!-- <img src="docs/screenshots/receitas.png" alt="Gestão de Receitas" width="800"/> -->
+<!-- <img src="docs/screenshots/simulador.png" alt="Simulador de Lucros" width="800"/> -->
 
-Quando o Chef manda algo no site, o n8n recebe via Webhook. O nó Switch inicial identifica o tipo de arquivo:
+*Screenshots em breve*
 
-Texto: Vai direto para a limpeza.
+</div>
 
-Imagem (GPT-4o Vision): O n8n converte o base64 em arquivo e usa o modelo gpt-4o para "ler" a imagem (como uma nota fiscal de mercado ou uma foto de receita escrita à mão).
+---
 
-Áudio (Whisper): O áudio é convertido e enviado para o modelo de transcrição da OpenAI, transformando a voz do Chef em texto.
+## 💡 O Problema
 
-B. O Cérebro: AI Agent + Code JS
+Todo profissional da gastronomia enfrenta o mesmo desafio: **como precificar corretamente?** Muitos chefs, confeiteiros e donos de restaurantes calculam preços "no olho", sem considerar custos reais de mão de obra, energia, desperdício e embalagem — e acabam **vendendo no prejuízo**.
 
-O nó Edit Fields centraliza tudo em uma variável chamada message. Essa mensagem entra no AI Agent (Mestre do Chef).
+## 🎯 A Solução
 
-O Prompt: Você configurou a IA para não apenas conversar, mas para ser um gerador de JSON. Ela decide se o usuário quer:
+O **ChefCost** é uma plataforma completa que automatiza toda a cadeia de precificação:
 
-save: Cadastrar algo.
+```
+📦 Cadastre ingredientes com preços reais
+  → 🍰 Monte receitas com quantidades exatas
+    → 🧮 Custos calculados automaticamente
+      → 💰 Preço de venda sugerido com margem de lucro
+        → 📊 Simule cenários de vendas e lucro
+```
 
-query: Consultar dados (BI).
+---
 
-chat: Só conversar.
+## 🚀 Funcionalidades
 
-Nó Code (JavaScript): Este nó é vital. Ele pega a resposta de texto da IA e a transforma em um objeto JSON real que o n8n consegue ler campo por campo (action, data, sql).
+### 📦 Gestão de Ingredientes
+- Cadastro completo com preço de compra, quantidade da embalagem e unidade (kg, g, L, ml, un)
+- **Cálculo automático do preço por unidade mínima** — sabe exatamente quanto custa cada grama
 
-C. A Execução (Roteamento Dinâmico)
+### 🍰 Construtor de Receitas
+- Monte receitas selecionando ingredientes e quantidades
+- Configure: rendimento, margem de lucro (%), embalagem, fator de desperdício, tempo de preparo
+- Suporte a fotos e instruções de preparo
+- CRUD completo com interface intuitiva
 
-O Switch1 lê a action definida pela IA:
+### 🧮 Cálculo Automático de Custos
+O sistema calcula automaticamente:
 
-Rota save: O Switch2 verifica se é um material ou recipe.
+| Componente | Descrição |
+|-----------|-----------|
+| **Custo dos ingredientes** | Soma de todos os itens convertidos para unidade mínima |
+| **Desperdício** | Ajuste pelo fator de perda configurado |
+| **Mão de obra** | Tempo de preparo × valor/hora do profissional |
+| **Energia** | Custo energético proporcional |
+| **Preço sugerido** | Custo total × (1 + margem de lucro%) |
 
-Se for Material, o nó Postgres insere nome, preço e já calcula o price_per_min_unit (preço por grama/ml).
+### 📊 Simulador de Lucros
+- Selecione uma receita e defina quantidades de venda
+- Visualize: custo/unidade, preço/unidade, investimento total, receita, **lucro líquido**
+- Detalhamento completo dos ingredientes necessários
 
-Se for Recipe, ele preenche o cabeçalho da receita na tabela recipes.
+### 🤖 Assistente IA (Chef Assistant)
+- Chat flutuante com **Google Gemini AI** via **n8n**
+- Suporte a **texto, imagens e voz** (gravação via MediaRecorder API)
+- Cadastre ingredientes e receitas por linguagem natural
+- Processe notas fiscais por foto — a IA extrai os dados automaticamente
 
-Rota query: A IA escreve uma query SQL (ex: "Qual meu lucro médio?"). O nó Postgres executa esse comando diretamente no seu banco Neon.
+### 👨‍💼 Painel Administrativo
+- Gestão de usuários com ativação/desativação
+- Controle de acesso por roles (admin/user)
+- Multi-tenant — cada usuário vê apenas seus dados
 
-Rota chat: Vai direto para a resposta final.
+### ⚙️ Conversões Personalizadas
+- Conversões padrão incluídas (xícara, colher de sopa, colher de chá, copo americano)
+- Adicione conversões customizadas para suas medidas caseiras
 
-D. Humanização e Resposta
+---
 
-Se o Chef fez uma pergunta de BI (query), os dados que voltam do Postgres são números "frios". O nó Basic LLM Chain recebe esses dados e os transforma em uma frase amigável: "Chef, verifiquei aqui e seu Bolo de Cenoura é seu item mais lucrativo hoje!".
+## 🛠️ Stack Tecnológica
 
-3. Integração com o Código (GitHub: ChefCost)
+| Camada | Tecnologia | Finalidade |
+|--------|-----------|------------|
+| **Frontend** | React 19 + TypeScript | Interface reativa e tipada |
+| **Build** | Vite 6.2 | Build ultrarrápido com HMR |
+| **Estilização** | Tailwind CSS 4 | Design responsivo mobile-first |
+| **Animações** | Framer Motion 12 | Transições e micro-interações |
+| **Backend** | Node.js + Express.js | API RESTful |
+| **Banco de Dados** | PostgreSQL (Neon) | Banco serverless com SSL |
+| **Autenticação** | JWT + bcrypt | Tokens seguros com hash de senha |
+| **IA** | Google Gemini AI | Assistente inteligente |
+| **Automação** | n8n | Processamento de mensagens/imagens/voz |
+| **Ícones** | Lucide React | Iconografia moderna |
 
-No seu repositório, a mágica acontece na conexão entre o chat e o Webhook do n8n.
+---
 
-Endpoint de Chat: No seu backend (provavelmente em /api/chat ou similar), você tem uma função que dispara um fetch(POST) para a URL do Webhook que está no início do seu n8n.
+## 📐 Arquitetura
 
-Payload de Segurança: O código envia o user_email (ou user_id) em cada requisição. Isso é fundamental, pois no n8n, a IA usa esse e-mail para garantir que o SQL gerado tenha sempre um WHERE user_id = 'email_do_chef', impedindo que um usuário veja os dados de outro.
+```
+┌─────────────────────────────────────────────┐
+│              FRONTEND (React 19)            │
+│     Tailwind CSS · Framer Motion · Vite    │
+└──────────────────┬──────────────────────────┘
+                   │ HTTP + JWT
+┌──────────────────▼──────────────────────────┐
+│           BACKEND (Express.js)              │
+│     API RESTful · Auth · Proxy n8n         │
+└────────┬──────────────────────┬─────────────┘
+         │                      │
+┌────────▼────────┐    ┌───────▼──────────┐
+│   PostgreSQL    │    │      n8n         │
+│    (Neon)       │    │   Workflow AI    │
+│                 │    │      │           │
+│  • users        │    │      ▼           │
+│  • materials    │    │  Google Gemini   │
+│  • recipes      │    │  (texto/img/voz) │
+│  • recipe_items │    └──────────────────┘
+│  • conversions  │
+│  • settings     │
+└─────────────────┘
+```
 
-Multimodalidade no Código: Seu frontend trata o áudio usando a MediaRecorder API e converte para base64, enviando para o n8n processar.
+---
 
-4. Pontos Fortes do seu Projeto
+## 🎨 Design
 
-Custo Computacional Otimizado: Você usa o gpt-5-mini (ou 4o-mini) para a lógica pesada e apenas o gpt-4o para visão, economizando tokens.
+- **Mobile-first** com layout responsivo (max 448px mobile, 1152px desktop)
+- **Paleta gastronômica**: Creme (`#FCF9F1`), Rosa Pastel (`#F4C2C2`), Bordô (`#800020`)
+- Cards arredondados com visual acolhedor
+- Navegação por barra flutuante inferior no mobile
 
-Memória de Longo Prazo: O nó Postgres Chat Memory permite que o Chef diga: "Lembra daquele bolo que cadastrei ontem? Aumente o preço dele em 10%". A IA consegue buscar o contexto das conversas passadas.
+---
 
-BI Automatizado: O fato de a IA gerar o próprio SQL dá ao Chef um analista de dados 24h por dia dentro do chat.
+## 📦 Estrutura do Projeto
 
-Próximos Passos Sugeridos:
+```
+ChefCost/
+├── server.js                    # Backend Express (API completa)
+├── vite.config.ts               # Configuração Vite + Tailwind
+├── .env.example                 # Template de variáveis
+├── create-user.js               # Script CLI para criar usuários
+│
+├── src/
+│   ├── App.tsx                  # App principal com roteamento
+│   ├── types.ts                 # Interfaces TypeScript
+│   ├── constants.ts             # Conversões padrão e cores
+│   │
+│   ├── components/
+│   │   ├── DashboardSummary.tsx # Dashboard com métricas
+│   │   ├── IngredientForm.tsx   # Formulário de ingredientes
+│   │   ├── IngredientList.tsx   # Lista de ingredientes
+│   │   ├── RecipeForm.tsx       # Construtor de receitas
+│   │   ├── RecipeList.tsx       # Galeria de receitas
+│   │   ├── ProfitCalculator.tsx # Simulador de lucros
+│   │   ├── ChefAssistant.tsx    # Chat IA flutuante
+│   │   ├── ConversionForm.tsx   # Conversões customizadas
+│   │   ├── SettingsForm.tsx     # Configurações do usuário
+│   │   ├── AdminDashboard.tsx   # Painel administrativo
+│   │   └── SimpleAuth.tsx       # Tela de login
+│   │
+│   ├── hooks/
+│   │   ├── useAPI.ts            # Hook de CRUD universal
+│   │   └── useAuth.ts           # Hook de autenticação
+│   │
+│   ├── services/
+│   │   ├── apiService.ts        # Cliente HTTP
+│   │   ├── assistantService.ts  # Cliente do assistente IA
+│   │   └── authService.ts       # Gerenciamento de tokens
+│   │
+│   └── utils/
+│       └── calculations.ts      # Motor de cálculos de custo
+│
+└── dist/                        # Build de produção
+```
 
-Cadastro de Itens da Receita: Como vimos, sua tabela recipes não tem os ingredientes. Você pode criar uma tabela recipe_items e usar o nó Split in Batches no n8n para salvar cada ingrediente vindo do array items[] da IA.
+---
 
-Feedback Visual: No frontend, quando o n8n responder que salvou um material, você pode fazer o site dar um "refresh" automático na tabela de materiais para o Chef ver o dado aparecendo em tempo real.
+## ⚡ Como Executar
 
-Este projeto é um excelente exemplo de SaaS com IA aplicada, resolvendo uma dor real (o tédio de preencher planilhas de custos) através de uma interface natural.
+### Pré-requisitos
+- Node.js 18+
+- PostgreSQL (recomendado: [Neon](https://neon.tech/))
+
+### Instalação
+
+```bash
+# Clone o repositório
+git clone https://github.com/Ezequiel-o-Rodrigues/ChefCost.git
+cd ChefCost
+
+# Instale as dependências
+npm install
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+```
+
+### Variáveis de Ambiente
+
+```env
+# PostgreSQL (Neon)
+DATABASE_URL=postgresql://usuario:senha@host/database?sslmode=require
+
+# Google AI (Assistente)
+GEMINI_API_KEY=sua-chave-gemini
+
+# n8n (Automação IA)
+N8N_WEBHOOK_URL=https://seu-n8n.com/webhook/chef-assistant
+
+# App
+PORT=3001
+```
+
+### Executar
+
+```bash
+# Modo desenvolvimento
+npm run dev
+
+# Build para produção
+npm run build
+
+# Iniciar servidor de produção
+npm start
+```
+
+---
+
+## 🔐 Segurança
+
+- **JWT** com expiração de 30 dias
+- **bcrypt** para hash de senhas (10 rounds)
+- Dados isolados por usuário (**multi-tenant**)
+- SSL habilitado no banco de dados
+- Admin pode ativar/desativar contas
+
+---
+
+## 🤝 Autor
+
+**Ezequiel Oliveira** — Full-Stack Developer
+
+---
+
+<div align="center">
+
+*Feito com ❤️ para quem transforma ingredientes em arte — e quer lucrar com isso*
+
+</div>
