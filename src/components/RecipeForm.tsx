@@ -63,8 +63,9 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
+    if (!name.trim()) return;
     onSave({
       name,
       yield: yieldQty,
@@ -82,24 +83,23 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-[100] backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-2xl max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center sm:p-4 z-[100] backdrop-blur-sm">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center flex-shrink-0">
+        <div className="flex justify-between items-center flex-shrink-0 pb-3 border-b border-gray-100">
           <h2 className="text-xl font-display font-bold text-burgundy">{initialData ? 'Editar Receita' : 'Nova Receita'}</h2>
-          <button onClick={onClose} className="text-gray-400 p-1 hover:text-gray-600">
-            <X size={24} />
+          <button onClick={onClose} className="text-gray-400 p-2 hover:text-gray-600 hover:bg-creme rounded-xl transition-colors active:scale-90">
+            <X size={22} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto space-y-6 pr-1 pt-4 custom-scrollbar">
           
           {/* Informações Básicas */}
           <div className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-400 uppercase">Nome da Receita</label>
               <input
-                required
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -112,7 +112,6 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase">Rendimento</label>
                 <input
-                  required
                   type="number"
                   min="1"
                   value={yieldQty === 0 ? '' : yieldQty}
@@ -127,7 +126,6 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase">Margem (%)</label>
                 <input
-                  required
                   type="number"
                   min="0"
                   value={profitMargin === 0 ? '' : profitMargin}
@@ -142,7 +140,6 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase">Tempo (min)</label>
                 <input
-                  required
                   type="number"
                   min="0"
                   value={prepTimeMinutes === 0 ? '' : prepTimeMinutes}
@@ -332,12 +329,13 @@ export const RecipeForm: React.FC<RecipeFormProps> = ({ materials, settings, onS
 
           </div>
 
-          <div className="pt-4 pb-2 flex-shrink-0">
-            <button type="submit" className="w-full btn-primary py-3 text-sm shadow-md">
-              {initialData ? 'Atualizar Receita' : 'Salvar Receita'}
-            </button>
-          </div>
-        </form>
+        </div>
+
+        <div className="pt-3 flex-shrink-0 border-t border-gray-100">
+          <button type="button" onClick={handleSubmit} className="w-full btn-primary py-3 text-sm shadow-md">
+            {initialData ? 'Atualizar Receita' : 'Salvar Receita'}
+          </button>
+        </div>
 
         <AnimatePresence>
           {showNewIngredientForm && (

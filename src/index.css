@@ -32,11 +32,18 @@ body {
 }
 
 .bottom-nav-item {
-  @apply flex flex-col items-center justify-center flex-1 py-2 text-gray-400 transition-colors;
+  @apply flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition-colors active:scale-90;
 }
 
 .bottom-nav-item.active {
   @apply text-burgundy;
+}
+
+/* Safe area for devices with home bar (iPhone etc) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {

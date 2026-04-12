@@ -79,8 +79,8 @@ function AppContent() {
         return <RecipeList recipes={recipes} materials={materials} settings={settings} onAdd={() => setShowRecipeForm(true)} onDelete={deleteRecipe} onUpdate={updateRecipe} onAddMaterial={addMaterial} />;
       case 'settings':
         return (
-          <div className="p-6 pt-20 space-y-6">
-            <header>
+          <div className="space-y-6">
+            <header className="px-2 md:px-0">
               <h1 className="text-2xl font-display font-bold text-burgundy">Configurações</h1>
             </header>
             <SettingsForm settings={settings} onSave={updateSettings} />
@@ -100,7 +100,7 @@ function AppContent() {
         </div>
 
         {/* Improved Header - Fixed but spanning full narrow-width on desktop or full on mobile */}
-        <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-6xl h-14 sm:h-16 bg-white z-40 border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 md:px-8 shadow-sm">
+        <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-6xl h-14 bg-white/95 backdrop-blur-xl z-40 border-b border-gray-100 flex items-center justify-between px-4 md:px-8 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-burgundy rounded-xl flex items-center justify-center shadow-md transform -rotate-6">
               <ChefHat className="text-white" size={20} />
@@ -120,7 +120,7 @@ function AppContent() {
         </header>
 
         {/* Main Content Area - better padding for desktop */}
-        <main className="flex-1 overflow-y-auto pb-28 md:pb-16 pt-16 sm:pt-20 px-3 sm:px-4 md:px-8 relative z-10">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-24 pt-16 px-3 sm:px-4 md:px-8 relative z-10">
           <div className="md:bg-white md:rounded-3xl md:shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:border md:border-gray-50 md:p-10 md:mt-4 min-h-[calc(100vh-14rem)]">
             <AnimatePresence mode="wait">
               <motion.div
@@ -136,31 +136,31 @@ function AppContent() {
           </div>
         </main>
 
-        {/* Navigation - Integrated vs Floating */}
-        <nav className="fixed bottom-0 md:bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-lg bg-white md:bg-white/90 md:backdrop-blur-xl border-t md:border border-gray-100 md:border-black/5 px-1 sm:px-2 h-16 sm:h-20 md:h-18 flex items-center justify-around z-50 md:rounded-3xl md:shadow-2xl">
+        {/* Navigation - Compact bottom bar */}
+        <nav className="fixed bottom-0 md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-lg bg-white/95 backdrop-blur-xl border-t md:border border-gray-100 md:border-black/5 px-2 h-14 md:h-14 flex items-center justify-around z-50 md:rounded-2xl md:shadow-2xl">
           <button onClick={() => setActiveTab('dashboard')} className={cn('bottom-nav-item', activeTab === 'dashboard' && 'active')}>
-            <LayoutDashboard size={22} className="md:size-20" />
-            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Início</span>
+            <LayoutDashboard size={20} />
+            <span className="text-[9px] mt-1 font-bold uppercase tracking-tight">Início</span>
           </button>
           <button onClick={() => setActiveTab('ingredients')} className={cn('bottom-nav-item', activeTab === 'ingredients' && 'active')}>
-            <Package size={22} className="md:size-20" />
-            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Insumos</span>
+            <Package size={20} />
+            <span className="text-[9px] mt-1 font-bold uppercase tracking-tight">Insumos</span>
           </button>
           <button onClick={() => setActiveTab('simulator')} className={cn('bottom-nav-item', activeTab === 'simulator' && 'active')}>
             <div className={cn(
-              "p-3 rounded-2xl transition-all duration-300",
-              activeTab === 'simulator' ? "bg-burgundy text-white shadow-lg scale-110" : "bg-creme text-burgundy"
+              "p-2.5 rounded-xl transition-all duration-300",
+              activeTab === 'simulator' ? "bg-burgundy text-white shadow-lg scale-105" : "bg-creme text-burgundy"
             )}>
-              <Calculator size={24} className="md:size-22" />
+              <Calculator size={20} />
             </div>
           </button>
           <button onClick={() => setActiveTab('recipes')} className={cn('bottom-nav-item', activeTab === 'recipes' && 'active')}>
-            <Utensils size={22} className="md:size-20" />
-            <span className="text-[9px] md:text-[10px] mt-1.5 font-bold uppercase tracking-tight">Receitas</span>
+            <Utensils size={20} />
+            <span className="text-[9px] mt-1 font-bold uppercase tracking-tight">Receitas</span>
           </button>
           <button onClick={() => setActiveTab('settings')} className={cn('bottom-nav-item', activeTab === 'settings' && 'active')}>
-            <Settings size={20} className="sm:size-22 md:size-20" />
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] mt-1 sm:mt-1.5 font-bold uppercase tracking-tight">Ajustes</span>
+            <Settings size={20} />
+            <span className="text-[9px] mt-1 font-bold uppercase tracking-tight">Ajustes</span>
           </button>
         </nav>
 

@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Material, Recipe, Conversion, AppSettings } from '../types';
+import { calcPricePerMinUnit } from '../utils/materialUtils';
 
 export const useFirebase = () => {
   const [user, setUser] = useState(auth.currentUser);
@@ -84,12 +85,7 @@ export const useFirebase = () => {
   const addMaterial = async (material: Omit<Material, 'id' | 'userId' | 'pricePerMinUnit'>) => {
     if (!user) return;
     
-    // Calculate price per min unit (g or ml or un)
-    const totalMinUnits = material.unit === 'kg' || material.unit === 'L' 
-      ? material.packageQty * 1000 
-      : material.packageQty;
-    
-    const pricePerMinUnit = material.pricePaid / totalMinUnits;
+    const pricePerMinUnit = calcPricePerMinUnit(material.pricePaid, material.packageQty, material.unit);
 
     await addDoc(collection(db, 'materials'), {
       ...material,

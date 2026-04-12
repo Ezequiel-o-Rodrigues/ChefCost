@@ -20,10 +20,21 @@ const getDisplayPrice = (material: Material): string => {
 
 export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd, onDelete, onUpdate }) => {
   const [editing, setEditing] = useState<Material | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    if (confirmDeleteId === id) {
+      onDelete(id);
+      setConfirmDeleteId(null);
+    } else {
+      setConfirmDeleteId(id);
+      setTimeout(() => setConfirmDeleteId(null), 3000);
+    }
+  };
 
   return (
-    <div className="p-6 pt-20 space-y-6">
-      <header className="flex justify-between items-center">
+    <div className="space-y-4">
+      <header className="flex justify-between items-center px-2 md:px-0">
         <h1 className="text-2xl font-display font-bold text-burgundy">Ingredientes</h1>
         <button
           onClick={onAdd}
@@ -33,7 +44,7 @@ export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd
         </button>
       </header>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {materials.length === 0 ? (
           <div className="text-center py-12 space-y-3">
             <p className="text-gray-400">Nenhum ingrediente cadastrado.</p>
@@ -41,26 +52,32 @@ export const IngredientList: React.FC<IngredientListProps> = ({ materials, onAdd
           </div>
         ) : (
           materials.map((item) => (
-            <div key={item.id} className="card bg-white flex justify-between items-center group">
-              <div>
-                <p className="font-medium">{item.name}</p>
+            <div key={item.id} className="card bg-white flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{item.name}</p>
                 <p className="text-xs text-gray-400">
                   {item.packageQty}{item.unit} • R$ {item.pricePaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <p className="text-burgundy font-bold">{getDisplayPrice(item)}</p>
+              <p className="text-burgundy font-bold text-sm whitespace-nowrap">{getDisplayPrice(item)}</p>
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => setEditing(item)}
-                  className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-burgundy"
+                  className="p-2 text-gray-400 hover:text-burgundy hover:bg-creme rounded-lg transition-colors active:scale-90"
+                  aria-label="Editar"
                 >
                   <Pencil size={16} />
                 </button>
                 <button
-                  onClick={() => onDelete(item.id!)}
-                  className="text-red-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+                  onClick={() => handleDelete(item.id!)}
+                  className={`p-2 rounded-lg transition-all active:scale-90 ${
+                    confirmDeleteId === item.id
+                      ? 'text-white bg-red-500'
+                      : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                  }`}
+                  aria-label={confirmDeleteId === item.id ? 'Confirmar exclusão' : 'Excluir'}
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>

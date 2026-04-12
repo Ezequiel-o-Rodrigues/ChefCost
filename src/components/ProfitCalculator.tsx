@@ -30,7 +30,7 @@ export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, mat
   }, [recipe, materialsMap, units]);
 
   return (
-    <div className="p-6 pt-20 space-y-6 pb-24">
+    <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-display font-bold text-burgundy">Simulador de Lucro</h1>
         <p className="text-gray-500 text-sm">Simule suas vendas e veja o retorno exato</p>
@@ -114,11 +114,14 @@ export const ProfitCalculator: React.FC<ProfitCalculatorProps> = ({ recipes, mat
                   {recipe.items.map((item, idx) => {
                     const material = materialsMap[item.materialId];
                     if (!material) return null;
-                    const qtyInMinUnit = convertToMinUnit(item.qty, item.unit) * units;
+                    const yieldQty = recipe.yield || 1;
+                    const scale = units / yieldQty;
+                    const qtyInMinUnit = convertToMinUnit(item.qty, item.unit) * scale;
                     const cost = qtyInMinUnit * material.pricePerMinUnit;
+                    const displayQty = item.qty * scale;
                     return (
                       <div key={idx} className="flex justify-between text-xs text-orange-800/80 items-center">
-                        <span>{item.qty * units}{item.unit} de {material.name}</span>
+                        <span>{displayQty % 1 === 0 ? displayQty : displayQty.toFixed(2)}{item.unit} de {material.name}</span>
                         <span className="font-bold">R$ {fmt(cost)}</span>
                       </div>
                     );
