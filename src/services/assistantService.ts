@@ -12,7 +12,7 @@ export const assistantService = {
   },
 
   sendFile: async (file: File, userEmail: string) => {
-    return new Promise<{ message: string }>((resolve, reject) => {
+    return new Promise<{ response?: string; message?: string }>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async () => {
         try {

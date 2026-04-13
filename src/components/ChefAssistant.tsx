@@ -61,10 +61,10 @@ export const ChefAssistant: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await assistantService.sendMessage(text, userEmail || 'guest');
-      addMessage({ 
-        type: 'text', 
-        sender: 'assistant', 
-        content: response.message || 'Recebido! Estou processando seu pedido.' 
+      addMessage({
+        type: 'text',
+        sender: 'assistant',
+        content: response.response || response.message || 'Recebido! Estou processando seu pedido.'
       });
     } catch (error) {
       addMessage({ 
@@ -90,10 +90,10 @@ export const ChefAssistant: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await assistantService.sendFile(file, userEmail || 'guest');
-      addMessage({ 
-        type: 'text', 
-        sender: 'assistant', 
-        content: response.message || 'Arquivo recebido com sucesso! Vou processar agora.' 
+      addMessage({
+        type: 'text',
+        sender: 'assistant',
+        content: response.response || response.message || 'Arquivo recebido com sucesso! Vou processar agora.'
       });
     } catch (error) {
       addMessage({ 
@@ -133,10 +133,10 @@ export const ChefAssistant: React.FC = () => {
         setIsLoading(true);
         try {
           const response = await assistantService.sendFile(audioFile, userEmail || 'guest');
-          addMessage({ 
-            type: 'text', 
-            sender: 'assistant', 
-            content: response.message || 'Áudio recebido! Estou ouvindo e processando.' 
+          addMessage({
+            type: 'text',
+            sender: 'assistant',
+            content: response.response || response.message || 'Áudio recebido! Estou ouvindo e processando.'
           });
         } catch (error) {
           addMessage({ 
