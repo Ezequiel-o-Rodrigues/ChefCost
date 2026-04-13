@@ -411,38 +411,39 @@ app.post('/api/settings', authenticateToken, async (req, res) => {
 });
 
 // === ASSISTANT PROXY ===
-app.post('/api/assistant', authenticateToken, async (req, res) => {
+const isTechnicalErrorPayload = (data) => {
+  const text = (data?.response || data?.message || '').toString();
+  if (!text.trim() && !data?.response) return true;
+  return /workflow execution failed|internal server error|stack trace|econnrefused|timeout|undefined is not|cannot read propert/i.test(text);
+};
+
+const forwardToAssistant = async (req, res) => {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
-  if (!webhookUrl) return res.status(503).json({ message: 'Assistente não configurado no servidor.' });
+  if (!webhookUrl) return res.status(503).json({ error: 'assistant_unavailable' });
   try {
-    const response = await fetch(webhookUrl, {
+    const r = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...req.body, userEmail: req.body.userEmail }),
     });
-    const data = await response.json();
+    if (!r.ok) {
+      console.error(`Assistant webhook returned ${r.status}`);
+      return res.status(502).json({ error: 'assistant_failed' });
+    }
+    const data = await r.json().catch(() => null);
+    if (!data || isTechnicalErrorPayload(data)) {
+      console.error('Assistant returned technical error payload:', data);
+      return res.status(502).json({ error: 'assistant_failed' });
+    }
     res.json(data);
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao conectar com o assistente.' });
+    console.error('Assistant proxy error:', error.message);
+    res.status(500).json({ error: 'assistant_unreachable' });
   }
-});
+};
 
-app.post('/api/assistant/file', authenticateToken, async (req, res) => {
-  const webhookUrl = process.env.N8N_WEBHOOK_URL;
-  if (!webhookUrl) return res.status(503).json({ message: 'Assistente não configurado no servidor.' });
-  // Repassa o body como JSON com metadata do arquivo
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
-    });
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: 'Erro ao conectar com o assistente.' });
-  }
-});
+app.post('/api/assistant', authenticateToken, forwardToAssistant);
+app.post('/api/assistant/file', authenticateToken, forwardToAssistant);
 
 // === FRONTEND ===
 app.get('*', (req, res) => {

@@ -41,6 +41,11 @@ export const ChefAssistant: React.FC = () => {
     }
   }, [messages]);
 
+  const looksLikeTechnicalError = (text: string | undefined | null): boolean => {
+    if (!text || !text.trim()) return true;
+    return /workflow execution failed|internal server error|stack trace|undefined is not|cannot read propert|econnrefused|timeout of \d+ms exceeded/i.test(text);
+  };
+
   const addMessage = (msg: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage: Message = {
       ...msg,
@@ -61,16 +66,18 @@ export const ChefAssistant: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await assistantService.sendMessage(text, userEmail || 'guest');
+      const reply = response.response || response.message;
+      if (looksLikeTechnicalError(reply)) throw new Error('technical_error');
       addMessage({
         type: 'text',
         sender: 'assistant',
-        content: response.response || response.message || 'Recebido! Estou processando seu pedido.'
+        content: reply!
       });
     } catch (error) {
-      addMessage({ 
-        type: 'text', 
-        sender: 'assistant', 
-        content: 'Desculpe, tive um problema ao conectar com o servidor. Tente novamente mais tarde.' 
+      addMessage({
+        type: 'text',
+        sender: 'assistant',
+        content: 'Ops, tive um probleminha aqui 😅 Pode tentar novamente em instantes?'
       });
     } finally {
       setIsLoading(false);
@@ -90,16 +97,18 @@ export const ChefAssistant: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await assistantService.sendFile(file, userEmail || 'guest');
+      const reply = response.response || response.message;
+      if (looksLikeTechnicalError(reply)) throw new Error('technical_error');
       addMessage({
         type: 'text',
         sender: 'assistant',
-        content: response.response || response.message || 'Arquivo recebido com sucesso! Vou processar agora.'
+        content: reply!
       });
     } catch (error) {
-      addMessage({ 
-        type: 'text', 
-        sender: 'assistant', 
-        content: 'Erro ao enviar o arquivo. Verifique sua conexão.' 
+      addMessage({
+        type: 'text',
+        sender: 'assistant',
+        content: 'Não consegui processar essa imagem agora. Pode tentar novamente?'
       });
     } finally {
       setIsLoading(false);
@@ -133,16 +142,18 @@ export const ChefAssistant: React.FC = () => {
         setIsLoading(true);
         try {
           const response = await assistantService.sendFile(audioFile, userEmail || 'guest');
+          const reply = response.response || response.message;
+          if (looksLikeTechnicalError(reply)) throw new Error('technical_error');
           addMessage({
             type: 'text',
             sender: 'assistant',
-            content: response.response || response.message || 'Áudio recebido! Estou ouvindo e processando.'
+            content: reply!
           });
         } catch (error) {
-          addMessage({ 
-            type: 'text', 
-            sender: 'assistant', 
-            content: 'Não consegui processar seu áudio.' 
+          addMessage({
+            type: 'text',
+            sender: 'assistant',
+            content: 'Não consegui ouvir seu áudio direito. Pode gravar novamente?'
           });
         } finally {
           setIsLoading(false);
@@ -206,7 +217,7 @@ export const ChefAssistant: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9, y: 20, x: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20, x: 20 }}
-            className="fixed bottom-36 right-6 w-[calc(100vw-3rem)] sm:w-96 max-h-[500px] h-[60vh] bg-white rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col border border-gray-100"
+            className="fixed bottom-36 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[440px] md:w-[500px] max-h-[720px] h-[80vh] bg-white rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col border border-gray-100"
           >
             {/* Header */}
             <div className="bg-burgundy p-4 text-white flex items-center justify-between">
