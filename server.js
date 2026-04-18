@@ -299,6 +299,23 @@ app.get('/api/recipes', authenticateToken, async (req, res) => {
   }
 });
 
+const resolveMaterialId = async (item, userId) => {
+  if (item.materialId) return item.materialId;
+  if (!item.materialName) throw new Error('Item sem materialId nem materialName');
+  const found = await client.query(
+    'SELECT id FROM materials WHERE LOWER(name) = LOWER($1) AND user_id = $2 LIMIT 1',
+    [item.materialName.trim(), userId]
+  );
+  if (found.rows.length > 0) return found.rows[0].id;
+  const newId = randomUUID();
+  const unit = item.unit || 'g';
+  await client.query(
+    'INSERT INTO materials (id, name, unit, package_qty, price_paid, price_per_min_unit, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [newId, item.materialName.trim(), unit, 1, 0, 0, userId]
+  );
+  return newId;
+};
+
 app.post('/api/recipes', authenticateToken, async (req, res) => {
   try {
     const { name, yield: yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes, photoUrl, instructions, items } = req.body;
@@ -307,15 +324,18 @@ app.post('/api/recipes', authenticateToken, async (req, res) => {
       'INSERT INTO recipes (id, name, yield, profit_margin, packaging_cost, labor_cost, energy_cost, waste_factor, prep_time_minutes, photo_url, instructions, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *',
       [recipeId, name, yieldVal, profitMargin, packagingCost, laborCost, energyCost, wasteFactor, prepTimeMinutes || 0, photoUrl || '', instructions || '', req.userId]
     );
+    const resolvedItems = [];
     if (items?.length > 0) {
       for (const item of items) {
+        const materialId = await resolveMaterialId(item, req.userId);
         await client.query(
           'INSERT INTO recipe_items (id, recipe_id, material_id, qty, unit) VALUES ($1,$2,$3,$4,$5)',
-          [randomUUID(), recipeId, item.materialId, item.qty, item.unit]
+          [randomUUID(), recipeId, materialId, item.qty, item.unit]
         );
+        resolvedItems.push({ materialId, qty: item.qty, unit: item.unit });
       }
     }
-    res.json(mapRecipe(result.rows[0], items || []));
+    res.json(mapRecipe(result.rows[0], resolvedItems));
   } catch (error) {
     console.error('POST /api/recipes error:', error);
     res.status(500).json({ error: error.message });
@@ -334,9 +354,10 @@ app.put('/api/recipes/:id', authenticateToken, async (req, res) => {
     await client.query('DELETE FROM recipe_items WHERE recipe_id = $1', [id]);
     if (items?.length > 0) {
       for (const item of items) {
+        const materialId = await resolveMaterialId(item, req.userId);
         await client.query(
           'INSERT INTO recipe_items (id, recipe_id, material_id, qty, unit) VALUES ($1,$2,$3,$4,$5)',
-          [randomUUID(), id, item.materialId, item.qty, item.unit]
+          [randomUUID(), id, materialId, item.qty, item.unit]
         );
       }
     }
