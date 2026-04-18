@@ -421,10 +421,18 @@ const forwardToAssistant = async (req, res) => {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) return res.status(503).json({ error: 'assistant_unavailable' });
   try {
+    const apiBase = `${req.protocol}://${req.get('host')}`;
+    const userToken = req.headers.authorization?.split(' ')[1];
     const r = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...req.body, userEmail: req.body.userEmail }),
+      body: JSON.stringify({
+        ...req.body,
+        userEmail: req.body.userEmail,
+        userId: req.userId,
+        apiBase,
+        userToken,
+      }),
     });
     if (!r.ok) {
       console.error(`Assistant webhook returned ${r.status}`);
